@@ -3,7 +3,7 @@ import { IPC } from '@shared/ipc-channels'
 import type {
   Command,
   CommandInput,
-  RawSerialLine,
+  LogEntry,
   RunNowResult,
   SerialPortInfo,
   SerialStatus
@@ -35,11 +35,14 @@ const api = {
       const listener = (_event: Electron.IpcRendererEvent, status: SerialStatus): void => callback(status)
       ipcRenderer.on(IPC.SERIAL_STATUS, listener)
       return () => ipcRenderer.removeListener(IPC.SERIAL_STATUS, listener)
-    },
-    onLine: (callback: (line: RawSerialLine) => void): (() => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, line: RawSerialLine): void => callback(line)
-      ipcRenderer.on(IPC.SERIAL_LINE, listener)
-      return () => ipcRenderer.removeListener(IPC.SERIAL_LINE, listener)
+    }
+  },
+
+  logs: {
+    onEntry: (callback: (entry: LogEntry) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, entry: LogEntry): void => callback(entry)
+      ipcRenderer.on(IPC.LOGS_STREAM, listener)
+      return () => ipcRenderer.removeListener(IPC.LOGS_STREAM, listener)
     }
   }
 }

@@ -32,10 +32,16 @@ export interface RunNowResult {
   runId: string
 }
 
-// Temporary: a raw, unpersisted line received from the serial port, used only
-// for the milestone-3 proof-of-connectivity feed. Superseded by the real
-// persisted LogEntry stream once LogIngestor lands.
-export interface RawSerialLine {
-  raw: string
+export type LogFormat = 'text' | 'json'
+export type LogSource = 'manual' | 'scheduled' | 'unsolicited'
+
+export interface LogEntry {
+  id: number
+  commandId: number | null
+  runId: string | null
   timestamp: string
+  format: LogFormat
+  raw: string
+  parsed: string | null
+  source: LogSource
 }
