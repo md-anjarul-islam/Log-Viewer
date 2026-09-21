@@ -3,9 +3,11 @@ import { join } from 'path'
 import { getDb } from './db/connection'
 import { runMigrations } from './db/migrations'
 import { CommandsRepo } from './db/commandsRepo'
+import { SerialManager } from './serial/SerialManager'
 import { registerIpcHandlers } from './ipc'
 
 let mainWindow: BrowserWindow | null = null
+const serialManager = new SerialManager()
 
 function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -43,11 +45,15 @@ app.whenReady().then(() => {
   const commandsRepo = new CommandsRepo(db)
 
   mainWindow = createWindow()
-  registerIpcHandlers({ commandsRepo, getWindow: () => mainWindow })
+  registerIpcHandlers({ commandsRepo, serialManager, getWindow: () => mainWindow })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow()
   })
+})
+
+app.on('before-quit', () => {
+  serialManager.disconnect()
 })
 
 app.on('window-all-closed', () => {

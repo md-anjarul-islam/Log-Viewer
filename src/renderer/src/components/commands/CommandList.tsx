@@ -2,9 +2,11 @@ import type { Command } from '@shared/types'
 
 interface CommandListProps {
   commands: Command[]
+  serialConnected: boolean
   onToggleEnabled: (command: Command) => void
   onEdit: (command: Command) => void
   onDelete: (command: Command) => void
+  onRunNow: (command: Command) => void
 }
 
 function formatInterval(ms: number | null): string {
@@ -14,7 +16,14 @@ function formatInterval(ms: number | null): string {
   return `Every ${seconds}s`
 }
 
-function CommandList({ commands, onToggleEnabled, onEdit, onDelete }: CommandListProps): React.JSX.Element {
+function CommandList({
+  commands,
+  serialConnected,
+  onToggleEnabled,
+  onEdit,
+  onDelete,
+  onRunNow
+}: CommandListProps): React.JSX.Element {
   if (commands.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-neutral-500">
@@ -56,6 +65,14 @@ function CommandList({ commands, onToggleEnabled, onEdit, onDelete }: CommandLis
               </button>
             </td>
             <td className="py-2.5 pr-4 text-right">
+              <button
+                onClick={() => onRunNow(command)}
+                disabled={!serialConnected}
+                className="mr-3 text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-40"
+                title={serialConnected ? undefined : 'Connect to a serial port first'}
+              >
+                Run now
+              </button>
               <button
                 onClick={() => onEdit(command)}
                 className="mr-3 text-xs text-neutral-400 hover:text-neutral-100"

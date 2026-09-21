@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Command } from '@shared/types'
 import { useCommands } from '../../hooks/useCommands'
 import { useCommandsStore } from '../../store/commandsStore'
+import { useSerialStore } from '../../store/serialStore'
 import CommandList from './CommandList'
 import CommandEditorDialog from './CommandEditorDialog'
 
@@ -11,6 +12,7 @@ function CommandsView(): React.JSX.Element {
   const create = useCommandsStore((state) => state.create)
   const update = useCommandsStore((state) => state.update)
   const remove = useCommandsStore((state) => state.remove)
+  const serialConnected = useSerialStore((state) => state.status.connected)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Command | null>(null)
@@ -46,9 +48,11 @@ function CommandsView(): React.JSX.Element {
       <div className="flex-1 overflow-auto rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <CommandList
           commands={commands}
+          serialConnected={serialConnected}
           onToggleEnabled={(command) => update(command.id, { enabled: !command.enabled })}
           onEdit={openEdit}
           onDelete={handleDelete}
+          onRunNow={(command) => window.api.commands.runNow(command.id)}
         />
       </div>
 
