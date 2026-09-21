@@ -1,20 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import Sidebar, { type View } from './components/layout/Sidebar'
+import CommandsView from './components/commands/CommandsView'
+
+function LogsPlaceholder(): React.JSX.Element {
+  return (
+    <div className="flex h-full items-center justify-center text-sm text-neutral-500">
+      Log streaming view is coming in a later milestone.
+    </div>
+  )
+}
 
 function App(): React.JSX.Element {
-  const [appVersion, setAppVersion] = useState<string | null>(null)
-
-  useEffect(() => {
-    window.api.getAppVersion().then(setAppVersion)
-  }, [])
+  const [view, setView] = useState<View>('commands')
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-neutral-950 text-neutral-100">
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900 px-8 py-6 text-center">
-        <h1 className="text-2xl font-semibold">Log Viewer</h1>
-        <p className="mt-2 text-sm text-neutral-400">
-          {appVersion ? `Electron app v${appVersion} — IPC bridge working` : 'Connecting to main process…'}
-        </p>
-      </div>
+    <div className="flex h-screen w-screen bg-neutral-950 text-neutral-100">
+      <Sidebar active={view} onSelect={setView} />
+      <main className="flex-1 overflow-hidden">
+        {view === 'commands' ? <CommandsView /> : <LogsPlaceholder />}
+      </main>
     </div>
   )
 }
