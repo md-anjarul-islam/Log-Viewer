@@ -4,10 +4,16 @@ import { getDb } from './db/connection'
 import { runMigrations } from './db/migrations'
 import { CommandsRepo } from './db/commandsRepo'
 import { SerialManager } from './serial/SerialManager'
+import { Scheduler } from './scheduler/Scheduler'
 import { registerIpcHandlers } from './ipc'
 
 let mainWindow: BrowserWindow | null = null
 const serialManager = new SerialManager()
+const scheduler = new Scheduler((command) => {
+  serialManager.write(command.commandString).catch((err) => {
+    console.error(`Scheduled run of "${command.name}" failed:`, err instanceof Error ? err.message : err)
+  })
+})
 
 function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -43,9 +49,12 @@ app.whenReady().then(() => {
   const db = getDb()
   runMigrations(db)
   const commandsRepo = new CommandsRepo(db)
+  for (const command of commandsRepo.list()) {
+    scheduler.syncWithCommand(command)
+  }
 
   mainWindow = createWindow()
-  registerIpcHandlers({ commandsRepo, serialManager, getWindow: () => mainWindow })
+  registerIpcHandlers({ commandsRepo, serialManager, scheduler, getWindow: () => mainWindow })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow()
@@ -53,6 +62,7 @@ app.whenReady().then(() => {
 })
 
 app.on('before-quit', () => {
+  scheduler.stopAll()
   serialManager.disconnect()
 })
 
