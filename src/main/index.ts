@@ -1,9 +1,14 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
-import { IPC } from '@shared/ipc-channels'
+import { getDb } from './db/connection'
+import { runMigrations } from './db/migrations'
+import { CommandsRepo } from './db/commandsRepo'
+import { registerIpcHandlers } from './ipc'
 
-function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+let mainWindow: BrowserWindow | null = null
+
+function createWindow(): BrowserWindow {
+  const window = new BrowserWindow({
     width: 1200,
     height: 800,
     show: false,
@@ -14,29 +19,34 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+  window.on('ready-to-show', () => {
+    window.show()
   })
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
+  window.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
 
   if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    window.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    window.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return window
 }
 
 app.whenReady().then(() => {
-  ipcMain.handle(IPC.APP_GET_VERSION, () => app.getVersion())
+  const db = getDb()
+  runMigrations(db)
+  const commandsRepo = new CommandsRepo(db)
 
-  createWindow()
+  mainWindow = createWindow()
+  registerIpcHandlers({ commandsRepo, getWindow: () => mainWindow })
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow()
   })
 })
 
