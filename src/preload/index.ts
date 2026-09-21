@@ -1,6 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '@shared/ipc-channels'
-import type { Command, CommandInput } from '@shared/types'
+import type {
+  Command,
+  CommandInput,
+  RawSerialLine,
+  RunNowResult,
+  SerialPortInfo,
+  SerialStatus
+} from '@shared/types'
 
 const api = {
   getAppVersion: (): Promise<string> => ipcRenderer.invoke(IPC.APP_GET_VERSION),
@@ -11,10 +18,28 @@ const api = {
     update: (id: number, patch: Partial<CommandInput>): Promise<Command> =>
       ipcRenderer.invoke(IPC.COMMANDS_UPDATE, id, patch),
     delete: (id: number): Promise<void> => ipcRenderer.invoke(IPC.COMMANDS_DELETE, id),
+    runNow: (id: number): Promise<RunNowResult> => ipcRenderer.invoke(IPC.COMMANDS_RUN_NOW, id),
     onChanged: (callback: (commands: Command[]) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, commands: Command[]): void => callback(commands)
       ipcRenderer.on(IPC.COMMANDS_CHANGED, listener)
       return () => ipcRenderer.removeListener(IPC.COMMANDS_CHANGED, listener)
+    }
+  },
+
+  serial: {
+    listPorts: (): Promise<SerialPortInfo[]> => ipcRenderer.invoke(IPC.SERIAL_LIST_PORTS),
+    connect: (path: string, baudRate: number): Promise<{ ok: true } | { ok: false; error: string }> =>
+      ipcRenderer.invoke(IPC.SERIAL_CONNECT, path, baudRate),
+    disconnect: (): Promise<void> => ipcRenderer.invoke(IPC.SERIAL_DISCONNECT),
+    onStatus: (callback: (status: SerialStatus) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, status: SerialStatus): void => callback(status)
+      ipcRenderer.on(IPC.SERIAL_STATUS, listener)
+      return () => ipcRenderer.removeListener(IPC.SERIAL_STATUS, listener)
+    },
+    onLine: (callback: (line: RawSerialLine) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, line: RawSerialLine): void => callback(line)
+      ipcRenderer.on(IPC.SERIAL_LINE, listener)
+      return () => ipcRenderer.removeListener(IPC.SERIAL_LINE, listener)
     }
   }
 }
