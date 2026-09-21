@@ -3,11 +3,13 @@ import { ipcMain, type BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type { CommandInput, RunNowResult } from '@shared/types'
 import type { CommandsRepo } from '../db/commandsRepo'
+import type { Scheduler } from '../scheduler/Scheduler'
 import type { SerialManager } from '../serial/SerialManager'
 
 export function registerCommandHandlers(
   commandsRepo: CommandsRepo,
   serialManager: SerialManager,
+  scheduler: Scheduler,
   getWindow: () => BrowserWindow | null
 ): void {
   const broadcastChanged = (): void => {
@@ -18,18 +20,21 @@ export function registerCommandHandlers(
 
   ipcMain.handle(IPC.COMMANDS_CREATE, (_event, input: CommandInput) => {
     const command = commandsRepo.create(input)
+    scheduler.syncWithCommand(command)
     broadcastChanged()
     return command
   })
 
   ipcMain.handle(IPC.COMMANDS_UPDATE, (_event, id: number, patch: Partial<CommandInput>) => {
     const command = commandsRepo.update(id, patch)
+    scheduler.syncWithCommand(command)
     broadcastChanged()
     return command
   })
 
   ipcMain.handle(IPC.COMMANDS_DELETE, (_event, id: number) => {
     commandsRepo.delete(id)
+    scheduler.removeCommand(id)
     broadcastChanged()
   })
 
