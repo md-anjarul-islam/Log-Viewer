@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Sidebar, { type View } from './components/layout/Sidebar'
 import TopBar from './components/layout/TopBar'
 import CommandsView from './components/commands/CommandsView'
-import RawLogFeed from './components/logs/RawLogFeed'
+import LogStreamView from './components/logs/LogStreamView'
 
 function App(): React.JSX.Element {
   const [view, setView] = useState<View>('commands')
@@ -13,7 +13,7 @@ function App(): React.JSX.Element {
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar />
         <main className="flex-1 overflow-hidden">
-          {view === 'commands' ? <CommandsView /> : <RawLogFeed />}
+          {view === 'commands' ? <CommandsView /> : <LogStreamView />}
         </main>
       </div>
     </div>

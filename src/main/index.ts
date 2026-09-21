@@ -3,13 +3,17 @@ import { join } from 'path'
 import { getDb } from './db/connection'
 import { runMigrations } from './db/migrations'
 import { CommandsRepo } from './db/commandsRepo'
+import { LogsRepo } from './db/logsRepo'
 import { SerialManager } from './serial/SerialManager'
 import { Scheduler } from './scheduler/Scheduler'
+import { LogIngestor } from './logging/LogIngestor'
 import { registerIpcHandlers } from './ipc'
 
 let mainWindow: BrowserWindow | null = null
+let logIngestor: LogIngestor | null = null
 const serialManager = new SerialManager()
 const scheduler = new Scheduler((command) => {
+  logIngestor?.beginRun(command.id, 'scheduled')
   serialManager.write(command.commandString).catch((err) => {
     console.error(`Scheduled run of "${command.name}" failed:`, err instanceof Error ? err.message : err)
   })
@@ -49,12 +53,15 @@ app.whenReady().then(() => {
   const db = getDb()
   runMigrations(db)
   const commandsRepo = new CommandsRepo(db)
+  const logsRepo = new LogsRepo(db)
+  logIngestor = new LogIngestor(serialManager, logsRepo, () => mainWindow)
+
   for (const command of commandsRepo.list()) {
     scheduler.syncWithCommand(command)
   }
 
   mainWindow = createWindow()
-  registerIpcHandlers({ commandsRepo, serialManager, scheduler, getWindow: () => mainWindow })
+  registerIpcHandlers({ commandsRepo, serialManager, scheduler, logIngestor, getWindow: () => mainWindow })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow()

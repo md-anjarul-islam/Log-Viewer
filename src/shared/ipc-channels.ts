@@ -12,5 +12,6 @@ export const IPC = {
   SERIAL_CONNECT: 'serial:connect',
   SERIAL_DISCONNECT: 'serial:disconnect',
   SERIAL_STATUS: 'serial:status',
-  SERIAL_LINE: 'serial:line'
+
+  LOGS_STREAM: 'logs:stream'
 } as const

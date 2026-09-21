@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@serialport/parser-readline": "13.0.0",
+    "@tanstack/react-virtual": "3.14.13",
     "better-sqlite3": "12.11.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",

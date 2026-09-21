@@ -1,8 +1,8 @@
-import { randomUUID } from 'crypto'
 import { ipcMain, type BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type { CommandInput, RunNowResult } from '@shared/types'
 import type { CommandsRepo } from '../db/commandsRepo'
+import type { LogIngestor } from '../logging/LogIngestor'
 import type { Scheduler } from '../scheduler/Scheduler'
 import type { SerialManager } from '../serial/SerialManager'
 
@@ -10,6 +10,7 @@ export function registerCommandHandlers(
   commandsRepo: CommandsRepo,
   serialManager: SerialManager,
   scheduler: Scheduler,
+  logIngestor: LogIngestor,
   getWindow: () => BrowserWindow | null
 ): void {
   const broadcastChanged = (): void => {
@@ -43,7 +44,8 @@ export function registerCommandHandlers(
     if (!command) {
       throw new Error(`Command ${id} not found`)
     }
+    const runId = logIngestor.beginRun(command.id, 'manual')
     await serialManager.write(command.commandString)
-    return { runId: randomUUID() }
+    return { runId }
   })
 }
