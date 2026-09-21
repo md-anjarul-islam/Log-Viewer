@@ -14,6 +14,21 @@ const MIGRATIONS: string[] = [
     updated_at           TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
   );
   CREATE INDEX idx_commands_enabled ON commands(enabled);
+  `,
+  `
+  CREATE TABLE logs (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    command_id INTEGER REFERENCES commands(id) ON DELETE SET NULL,
+    run_id     TEXT,
+    timestamp  TEXT NOT NULL,
+    format     TEXT NOT NULL CHECK (format IN ('text','json')),
+    raw        TEXT NOT NULL,
+    parsed     TEXT,
+    source     TEXT NOT NULL CHECK (source IN ('manual','scheduled','unsolicited'))
+  );
+  CREATE INDEX idx_logs_command_id ON logs(command_id);
+  CREATE INDEX idx_logs_timestamp ON logs(timestamp);
+  CREATE INDEX idx_logs_command_timestamp ON logs(command_id, timestamp);
   `
 ]
 

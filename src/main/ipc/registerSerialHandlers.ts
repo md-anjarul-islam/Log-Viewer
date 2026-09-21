@@ -1,6 +1,5 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc-channels'
-import type { RawSerialLine } from '@shared/types'
 import type { SerialManager } from '../serial/SerialManager'
 
 export function registerSerialHandlers(
@@ -9,11 +8,6 @@ export function registerSerialHandlers(
 ): void {
   serialManager.on('status-change', (status) => {
     getWindow()?.webContents.send(IPC.SERIAL_STATUS, status)
-  })
-
-  serialManager.on('line', (raw: string) => {
-    const line: RawSerialLine = { raw, timestamp: new Date().toISOString() }
-    getWindow()?.webContents.send(IPC.SERIAL_LINE, line)
   })
 
   ipcMain.handle(IPC.SERIAL_LIST_PORTS, () => serialManager.listPorts())
