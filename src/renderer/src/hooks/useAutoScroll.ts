@@ -17,7 +17,8 @@ interface AutoScrollResult {
 export function useAutoScroll(
   scrollElRef: React.RefObject<HTMLDivElement | null>,
   virtualizer: Virtualizer<HTMLDivElement, Element>,
-  itemCount: number
+  itemCount: number,
+  enabled = true
 ): AutoScrollResult {
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [newCount, setNewCount] = useState(0)
@@ -25,6 +26,7 @@ export function useAutoScroll(
   const lastCountRef = useRef(itemCount)
 
   useEffect(() => {
+    if (!enabled) return
     const el = scrollElRef.current
     if (!el) return
 
@@ -38,9 +40,10 @@ export function useAutoScroll(
 
     el.addEventListener('scroll', handleScroll, { passive: true })
     return () => el.removeEventListener('scroll', handleScroll)
-  }, [scrollElRef])
+  }, [scrollElRef, enabled])
 
   useEffect(() => {
+    if (!enabled) return
     const added = itemCount - lastCountRef.current
     lastCountRef.current = itemCount
     if (added <= 0) return
@@ -50,7 +53,7 @@ export function useAutoScroll(
     } else {
       setNewCount((n) => n + added)
     }
-  }, [itemCount, virtualizer])
+  }, [itemCount, virtualizer, enabled])
 
   function jumpToBottom(): void {
     virtualizer.scrollToIndex(itemCount - 1, { align: 'end' })

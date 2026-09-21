@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import type { Command } from '@shared/types'
-import { useCommands } from '../../hooks/useCommands'
 import { useCommandsStore } from '../../store/commandsStore'
 import { useSerialStore } from '../../store/serialStore'
 import CommandList from './CommandList'
 import CommandEditorDialog from './CommandEditorDialog'
 
 function CommandsView(): React.JSX.Element {
-  useCommands()
   const commands = useCommandsStore((state) => state.commands)
   const create = useCommandsStore((state) => state.create)
   const update = useCommandsStore((state) => state.update)

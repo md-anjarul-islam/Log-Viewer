@@ -45,3 +45,25 @@ export interface LogEntry {
   parsed: string | null
   source: LogSource
 }
+
+export interface LogQueryFilter {
+  commandId?: number
+  format?: LogFormat
+  from?: string
+  to?: string
+  cursor?: string
+  limit: number
+}
+
+export interface LogQueryResult {
+  entries: LogEntry[]
+  nextCursor: string | null
+}
+
+export interface ClearLogsResult {
+  deletedCount: number
+}
+
+export interface LogsClearedEvent {
+  olderThanIso: string | null
+}

@@ -1,9 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type {
+  ClearLogsResult,
   Command,
   CommandInput,
   LogEntry,
+  LogQueryFilter,
+  LogQueryResult,
+  LogsClearedEvent,
   RunNowResult,
   SerialPortInfo,
   SerialStatus
@@ -43,6 +47,15 @@ const api = {
       const listener = (_event: Electron.IpcRendererEvent, entry: LogEntry): void => callback(entry)
       ipcRenderer.on(IPC.LOGS_STREAM, listener)
       return () => ipcRenderer.removeListener(IPC.LOGS_STREAM, listener)
+    },
+    query: (filter: LogQueryFilter): Promise<LogQueryResult> => ipcRenderer.invoke(IPC.LOGS_QUERY, filter),
+    clearAll: (): Promise<ClearLogsResult> => ipcRenderer.invoke(IPC.LOGS_CLEAR_ALL),
+    clearOlderThan: (days: number): Promise<ClearLogsResult> =>
+      ipcRenderer.invoke(IPC.LOGS_CLEAR_OLDER_THAN, days),
+    onCleared: (callback: (event: LogsClearedEvent) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: LogsClearedEvent): void => callback(payload)
+      ipcRenderer.on(IPC.LOGS_CLEARED, listener)
+      return () => ipcRenderer.removeListener(IPC.LOGS_CLEARED, listener)
     }
   }
 }
