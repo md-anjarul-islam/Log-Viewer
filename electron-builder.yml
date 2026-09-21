@@ -1,0 +1,16 @@
+appId: com.loganjarul.logviewer
+productName: Log Viewer
+directories:
+  buildResources: resources
+  output: dist
+files:
+  - out/**/*
+  - package.json
+asarUnpack:
+  - '**/*.node'
+mac:
+  target: dmg
+win:
+  target: nsis
+linux:
+  target: AppImage
