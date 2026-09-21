@@ -4,6 +4,7 @@ import type { LogEntry } from '@shared/types'
 interface LogRowProps {
   entry: LogEntry
   measureRef?: (el: HTMLDivElement | null) => void
+  onSelect?: (entry: LogEntry) => void
 }
 
 const SOURCE_STYLES: Record<LogEntry['source'], string> = {
@@ -12,12 +13,16 @@ const SOURCE_STYLES: Record<LogEntry['source'], string> = {
   unsolicited: 'bg-neutral-800 text-neutral-500'
 }
 
-function LogRowImpl({ entry, measureRef }: LogRowProps): React.JSX.Element {
+function LogRowImpl({ entry, measureRef, onSelect }: LogRowProps): React.JSX.Element {
   const time = new Date(entry.timestamp).toLocaleTimeString()
   const prettyJson = entry.format === 'json' && entry.parsed ? formatJson(entry.parsed) : null
 
   return (
-    <div ref={measureRef} className="border-b border-neutral-900 px-3 py-1.5">
+    <div
+      ref={measureRef}
+      onClick={() => onSelect?.(entry)}
+      className="cursor-pointer border-b border-neutral-900 px-3 py-1.5 hover:bg-neutral-800/50"
+    >
       <div className="flex items-start gap-2 font-mono text-xs">
         <span className="shrink-0 pt-0.5 text-neutral-600">{time}</span>
         <span className={`shrink-0 rounded px-1 pt-0.5 text-[10px] uppercase ${SOURCE_STYLES[entry.source]}`}>

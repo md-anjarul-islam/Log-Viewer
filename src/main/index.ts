@@ -61,7 +61,7 @@ app.whenReady().then(() => {
   }
 
   mainWindow = createWindow()
-  registerIpcHandlers({ commandsRepo, serialManager, scheduler, logIngestor, getWindow: () => mainWindow })
+  registerIpcHandlers({ commandsRepo, logsRepo, serialManager, scheduler, logIngestor, getWindow: () => mainWindow })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow()

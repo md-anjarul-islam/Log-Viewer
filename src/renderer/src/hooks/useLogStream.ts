@@ -18,15 +18,24 @@ export function useLogStream(): void {
       useLogsStore.getState().appendBatch(batch)
     }
 
-    const unsubscribe = window.api.logs.onEntry((entry) => {
+    const unsubscribeEntry = window.api.logs.onEntry((entry) => {
       bufferRef.current.push(entry)
       if (frameRef.current == null) {
         frameRef.current = requestAnimationFrame(flush)
       }
     })
 
+    const unsubscribeCleared = window.api.logs.onCleared(({ olderThanIso }) => {
+      if (olderThanIso == null) {
+        useLogsStore.getState().clearEntries()
+      } else {
+        useLogsStore.getState().removeOlderThan(olderThanIso)
+      }
+    })
+
     return () => {
-      unsubscribe()
+      unsubscribeEntry()
+      unsubscribeCleared()
       if (frameRef.current != null) cancelAnimationFrame(frameRef.current)
     }
   }, [])

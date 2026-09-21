@@ -13,5 +13,9 @@ export const IPC = {
   SERIAL_DISCONNECT: 'serial:disconnect',
   SERIAL_STATUS: 'serial:status',
 
-  LOGS_STREAM: 'logs:stream'
+  LOGS_STREAM: 'logs:stream',
+  LOGS_QUERY: 'logs:query',
+  LOGS_CLEAR_ALL: 'logs:clearAll',
+  LOGS_CLEAR_OLDER_THAN: 'logs:clearOlderThan',
+  LOGS_CLEARED: 'logs:cleared'
 } as const
