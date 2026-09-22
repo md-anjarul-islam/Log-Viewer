@@ -69,6 +69,18 @@ export interface LogQueryResult {
   nextCursor: string | null
 }
 
+export interface LogExportFilter {
+  commandId?: number
+  from?: string
+  to?: string
+}
+
+export interface LogExportResult {
+  canceled: boolean
+  filePath?: string
+  count?: number
+}
+
 export interface ClearLogsResult {
   deletedCount: number
 }

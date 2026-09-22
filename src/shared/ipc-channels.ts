@@ -21,6 +21,7 @@ export const IPC = {
 
   LOGS_STREAM: 'logs:stream',
   LOGS_QUERY: 'logs:query',
+  LOGS_EXPORT: 'logs:export',
   LOGS_CLEAR_ALL: 'logs:clearAll',
   LOGS_CLEAR_OLDER_THAN: 'logs:clearOlderThan',
   LOGS_CLEARED: 'logs:cleared'
