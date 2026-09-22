@@ -143,15 +143,18 @@ function CommandList({
     )
   }
 
-  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name))
+  const byCreatedAt = (a: { createdAt: string }, b: { createdAt: string }): number =>
+    a.createdAt.localeCompare(b.createdAt)
+
+  const sortedCategories = [...categories].sort(byCreatedAt)
   const groups: { key: string; label: string; commands: Command[] }[] = []
   for (const category of sortedCategories) {
-    const inCategory = commands.filter((c) => c.categoryId === category.id)
+    const inCategory = commands.filter((c) => c.categoryId === category.id).sort(byCreatedAt)
     if (inCategory.length > 0) {
       groups.push({ key: String(category.id), label: category.name, commands: inCategory })
     }
   }
-  const uncategorized = commands.filter((c) => c.categoryId == null)
+  const uncategorized = commands.filter((c) => c.categoryId == null).sort(byCreatedAt)
   if (uncategorized.length > 0) {
     groups.push({ key: 'uncategorized', label: 'Uncategorized', commands: uncategorized })
   }
