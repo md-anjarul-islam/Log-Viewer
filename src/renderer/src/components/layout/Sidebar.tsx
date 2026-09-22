@@ -1,4 +1,4 @@
-export type View = 'logs' | 'commands'
+export type View = 'logs' | 'commands' | 'categories'
 
 interface SidebarProps {
   active: View
@@ -7,7 +7,8 @@ interface SidebarProps {
 
 const ITEMS: { id: View; label: string }[] = [
   { id: 'logs', label: 'Logs' },
-  { id: 'commands', label: 'Commands' }
+  { id: 'commands', label: 'Commands' },
+  { id: 'categories', label: 'Categories' }
 ]
 
 function Sidebar({ active, onSelect }: SidebarProps): React.JSX.Element {

@@ -29,6 +29,16 @@ const MIGRATIONS: string[] = [
   CREATE INDEX idx_logs_command_id ON logs(command_id);
   CREATE INDEX idx_logs_timestamp ON logs(timestamp);
   CREATE INDEX idx_logs_command_timestamp ON logs(command_id, timestamp);
+  `,
+  `
+  CREATE TABLE categories (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    name       TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  );
+  ALTER TABLE commands ADD COLUMN category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL;
+  CREATE INDEX idx_commands_category_id ON commands(category_id);
   `
 ]
 

@@ -2,8 +2,10 @@ import { useState } from 'react'
 import Sidebar, { type View } from './components/layout/Sidebar'
 import TopBar from './components/layout/TopBar'
 import CommandsView from './components/commands/CommandsView'
+import CategoriesView from './components/categories/CategoriesView'
 import LogStreamView from './components/logs/LogStreamView'
 import { useCommands } from './hooks/useCommands'
+import { useCategories } from './hooks/useCategories'
 import { useLogStream } from './hooks/useLogStream'
 
 function App(): React.JSX.Element {
@@ -14,6 +16,7 @@ function App(): React.JSX.Element {
   // navigating away and back silently drops commands:changed/logs:stream
   // events that arrived while unmounted.
   useCommands()
+  useCategories()
   useLogStream()
 
   return (
@@ -22,7 +25,9 @@ function App(): React.JSX.Element {
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar />
         <main className="flex-1 overflow-hidden">
-          {view === 'commands' ? <CommandsView /> : <LogStreamView />}
+          {view === 'commands' && <CommandsView />}
+          {view === 'categories' && <CategoriesView />}
+          {view === 'logs' && <LogStreamView />}
         </main>
       </div>
     </div>

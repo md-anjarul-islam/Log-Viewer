@@ -3,6 +3,7 @@ import { join } from 'path'
 import { getDb } from './db/connection'
 import { runMigrations } from './db/migrations'
 import { CommandsRepo } from './db/commandsRepo'
+import { CategoriesRepo } from './db/categoriesRepo'
 import { LogsRepo } from './db/logsRepo'
 import { SerialManager } from './serial/SerialManager'
 import { Scheduler } from './scheduler/Scheduler'
@@ -53,6 +54,7 @@ app.whenReady().then(() => {
   const db = getDb()
   runMigrations(db)
   const commandsRepo = new CommandsRepo(db)
+  const categoriesRepo = new CategoriesRepo(db)
   const logsRepo = new LogsRepo(db)
   logIngestor = new LogIngestor(serialManager, logsRepo, () => mainWindow)
 
@@ -61,7 +63,15 @@ app.whenReady().then(() => {
   }
 
   mainWindow = createWindow()
-  registerIpcHandlers({ commandsRepo, logsRepo, serialManager, scheduler, logIngestor, getWindow: () => mainWindow })
+  registerIpcHandlers({
+    commandsRepo,
+    categoriesRepo,
+    logsRepo,
+    serialManager,
+    scheduler,
+    logIngestor,
+    getWindow: () => mainWindow
+  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow()
