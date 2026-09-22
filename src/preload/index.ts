@@ -7,6 +7,8 @@ import type {
   Command,
   CommandInput,
   LogEntry,
+  LogExportFilter,
+  LogExportResult,
   LogQueryFilter,
   LogQueryResult,
   LogsClearedEvent,
@@ -64,6 +66,7 @@ const api = {
       return () => ipcRenderer.removeListener(IPC.LOGS_STREAM, listener)
     },
     query: (filter: LogQueryFilter): Promise<LogQueryResult> => ipcRenderer.invoke(IPC.LOGS_QUERY, filter),
+    export: (filter: LogExportFilter): Promise<LogExportResult> => ipcRenderer.invoke(IPC.LOGS_EXPORT, filter),
     clearAll: (): Promise<ClearLogsResult> => ipcRenderer.invoke(IPC.LOGS_CLEAR_ALL),
     clearOlderThan: (days: number): Promise<ClearLogsResult> =>
       ipcRenderer.invoke(IPC.LOGS_CLEAR_OLDER_THAN, days),
