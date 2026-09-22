@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type {
+  Category,
+  CategoryInput,
   ClearLogsResult,
   Command,
   CommandInput,
@@ -27,6 +29,19 @@ const api = {
       const listener = (_event: Electron.IpcRendererEvent, commands: Command[]): void => callback(commands)
       ipcRenderer.on(IPC.COMMANDS_CHANGED, listener)
       return () => ipcRenderer.removeListener(IPC.COMMANDS_CHANGED, listener)
+    }
+  },
+
+  categories: {
+    list: (): Promise<Category[]> => ipcRenderer.invoke(IPC.CATEGORIES_LIST),
+    create: (input: CategoryInput): Promise<Category> => ipcRenderer.invoke(IPC.CATEGORIES_CREATE, input),
+    update: (id: number, patch: Partial<CategoryInput>): Promise<Category> =>
+      ipcRenderer.invoke(IPC.CATEGORIES_UPDATE, id, patch),
+    delete: (id: number): Promise<void> => ipcRenderer.invoke(IPC.CATEGORIES_DELETE, id),
+    onChanged: (callback: (categories: Category[]) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, categories: Category[]): void => callback(categories)
+      ipcRenderer.on(IPC.CATEGORIES_CHANGED, listener)
+      return () => ipcRenderer.removeListener(IPC.CATEGORIES_CHANGED, listener)
     }
   },
 
