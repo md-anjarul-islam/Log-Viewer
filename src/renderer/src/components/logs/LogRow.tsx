@@ -15,7 +15,6 @@ const SOURCE_STYLES: Record<LogEntry['source'], string> = {
 
 function LogRowImpl({ entry, measureRef, onSelect }: LogRowProps): React.JSX.Element {
   const time = new Date(entry.timestamp).toLocaleTimeString()
-  const prettyJson = entry.format === 'json' && entry.parsed ? formatJson(entry.parsed) : null
 
   return (
     <div
@@ -28,22 +27,10 @@ function LogRowImpl({ entry, measureRef, onSelect }: LogRowProps): React.JSX.Ele
         <span className={`shrink-0 rounded px-1 pt-0.5 text-[10px] uppercase ${SOURCE_STYLES[entry.source]}`}>
           {entry.source}
         </span>
-        {prettyJson ? (
-          <pre className="whitespace-pre-wrap text-emerald-300">{prettyJson}</pre>
-        ) : (
-          <span className="whitespace-pre-wrap text-neutral-300">{entry.raw}</span>
-        )}
+        <span className="whitespace-pre-wrap text-neutral-300">{entry.raw}</span>
       </div>
     </div>
   )
-}
-
-function formatJson(parsed: string): string {
-  try {
-    return JSON.stringify(JSON.parse(parsed), null, 2)
-  } catch {
-    return parsed
-  }
 }
 
 export default memo(LogRowImpl)

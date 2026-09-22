@@ -42,23 +42,12 @@ export class LogIngestor {
   }
 
   private handleLine(raw: string): void {
-    let format: 'text' | 'json' = 'text'
-    let parsed: string | null = null
-    try {
-      parsed = JSON.stringify(JSON.parse(raw))
-      format = 'json'
-    } catch {
-      // Not JSON; keep as plain text.
-    }
-
     const run = this.pendingRun
     const entry = this.logsRepo.insert({
       commandId: run?.commandId ?? null,
       runId: run?.runId ?? null,
       timestamp: new Date().toISOString(),
-      format,
       raw,
-      parsed,
       source: run?.source ?? 'unsolicited'
     })
 
