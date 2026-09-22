@@ -1,4 +1,3 @@
-import type { LogFormat } from '@shared/types'
 import { useCommandsStore } from '../../store/commandsStore'
 import { isFilterActive, useLogsStore } from '../../store/logsStore'
 
@@ -39,16 +38,6 @@ function LogFilterBar({ onOpenClear }: LogFilterBarProps): React.JSX.Element {
             {c.name}
           </option>
         ))}
-      </select>
-
-      <select
-        value={filter.format ?? ''}
-        onChange={(e) => setFilter({ format: (e.target.value || null) as LogFormat | null })}
-        className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200"
-      >
-        <option value="">All formats</option>
-        <option value="text">Text</option>
-        <option value="json">JSON</option>
       </select>
 
       <input

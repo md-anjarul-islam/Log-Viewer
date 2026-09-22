@@ -1,14 +1,12 @@
 import type Database from 'better-sqlite3'
-import type { LogEntry, LogFormat, LogQueryFilter, LogQueryResult, LogSource } from '@shared/types'
+import type { LogEntry, LogQueryFilter, LogQueryResult, LogSource } from '@shared/types'
 
 interface LogRow {
   id: number
   command_id: number | null
   run_id: string | null
   timestamp: string
-  format: string
   raw: string
-  parsed: string | null
   source: string
 }
 
@@ -18,9 +16,7 @@ function toLogEntry(row: LogRow): LogEntry {
     commandId: row.command_id,
     runId: row.run_id,
     timestamp: row.timestamp,
-    format: row.format as LogFormat,
     raw: row.raw,
-    parsed: row.parsed,
     source: row.source as LogSource
   }
 }
@@ -29,9 +25,7 @@ export interface InsertLogInput {
   commandId: number | null
   runId: string | null
   timestamp: string
-  format: LogFormat
   raw: string
-  parsed: string | null
   source: LogSource
 }
 
@@ -41,8 +35,8 @@ export class LogsRepo {
   insert(input: InsertLogInput): LogEntry {
     const result = this.db
       .prepare(
-        `INSERT INTO logs (command_id, run_id, timestamp, format, raw, parsed, source)
-         VALUES (@commandId, @runId, @timestamp, @format, @raw, @parsed, @source)`
+        `INSERT INTO logs (command_id, run_id, timestamp, format, raw, source)
+         VALUES (@commandId, @runId, @timestamp, 'text', @raw, @source)`
       )
       .run(input)
     const row = this.db
@@ -61,10 +55,6 @@ export class LogsRepo {
     if (filter.commandId != null) {
       conditions.push('command_id = @commandId')
       params.commandId = filter.commandId
-    }
-    if (filter.format) {
-      conditions.push('format = @format')
-      params.format = filter.format
     }
     if (filter.from) {
       conditions.push('timestamp >= @from')

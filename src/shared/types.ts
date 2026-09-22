@@ -45,7 +45,6 @@ export interface RunNowResult {
   runId: string
 }
 
-export type LogFormat = 'text' | 'json'
 export type LogSource = 'manual' | 'scheduled' | 'unsolicited'
 
 export interface LogEntry {
@@ -53,15 +52,12 @@ export interface LogEntry {
   commandId: number | null
   runId: string | null
   timestamp: string
-  format: LogFormat
   raw: string
-  parsed: string | null
   source: LogSource
 }
 
 export interface LogQueryFilter {
   commandId?: number
-  format?: LogFormat
   from?: string
   to?: string
   cursor?: string
