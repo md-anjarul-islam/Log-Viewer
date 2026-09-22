@@ -7,6 +7,7 @@ interface CommandRow {
   command_string: string
   enabled: number
   schedule_interval_ms: number | null
+  category_id: number | null
   created_at: string
   updated_at: string
 }
@@ -18,6 +19,7 @@ function toCommand(row: CommandRow): Command {
     commandString: row.command_string,
     enabled: row.enabled === 1,
     scheduleIntervalMs: row.schedule_interval_ms,
+    categoryId: row.category_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -43,14 +45,15 @@ export class CommandsRepo {
   create(input: CommandInput): Command {
     const result = this.db
       .prepare(
-        `INSERT INTO commands (name, command_string, enabled, schedule_interval_ms)
-         VALUES (@name, @commandString, @enabled, @scheduleIntervalMs)`
+        `INSERT INTO commands (name, command_string, enabled, schedule_interval_ms, category_id)
+         VALUES (@name, @commandString, @enabled, @scheduleIntervalMs, @categoryId)`
       )
       .run({
         name: input.name,
         commandString: input.commandString,
         enabled: input.enabled ? 1 : 0,
-        scheduleIntervalMs: input.scheduleIntervalMs
+        scheduleIntervalMs: input.scheduleIntervalMs,
+        categoryId: input.categoryId
       })
     return this.get(result.lastInsertRowid as number) as Command
   }
@@ -65,7 +68,8 @@ export class CommandsRepo {
       commandString: patch.commandString ?? existing.commandString,
       enabled: patch.enabled ?? existing.enabled,
       scheduleIntervalMs:
-        patch.scheduleIntervalMs !== undefined ? patch.scheduleIntervalMs : existing.scheduleIntervalMs
+        patch.scheduleIntervalMs !== undefined ? patch.scheduleIntervalMs : existing.scheduleIntervalMs,
+      categoryId: patch.categoryId !== undefined ? patch.categoryId : existing.categoryId
     }
     this.db
       .prepare(
@@ -74,6 +78,7 @@ export class CommandsRepo {
              command_string = @commandString,
              enabled = @enabled,
              schedule_interval_ms = @scheduleIntervalMs,
+             category_id = @categoryId,
              updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
          WHERE id = @id`
       )
@@ -82,7 +87,8 @@ export class CommandsRepo {
         name: merged.name,
         commandString: merged.commandString,
         enabled: merged.enabled ? 1 : 0,
-        scheduleIntervalMs: merged.scheduleIntervalMs
+        scheduleIntervalMs: merged.scheduleIntervalMs,
+        categoryId: merged.categoryId
       })
     return this.get(id) as Command
   }

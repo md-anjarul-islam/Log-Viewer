@@ -8,6 +8,12 @@ export const IPC = {
   COMMANDS_CHANGED: 'commands:changed',
   COMMANDS_RUN_NOW: 'commands:runNow',
 
+  CATEGORIES_LIST: 'categories:list',
+  CATEGORIES_CREATE: 'categories:create',
+  CATEGORIES_UPDATE: 'categories:update',
+  CATEGORIES_DELETE: 'categories:delete',
+  CATEGORIES_CHANGED: 'categories:changed',
+
   SERIAL_LIST_PORTS: 'serial:listPorts',
   SERIAL_CONNECT: 'serial:connect',
   SERIAL_DISCONNECT: 'serial:disconnect',

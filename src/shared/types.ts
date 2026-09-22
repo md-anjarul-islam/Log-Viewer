@@ -4,6 +4,7 @@ export interface Command {
   commandString: string
   enabled: boolean
   scheduleIntervalMs: number | null
+  categoryId: number | null
   createdAt: string
   updatedAt: string
 }
@@ -13,6 +14,18 @@ export interface CommandInput {
   commandString: string
   enabled: boolean
   scheduleIntervalMs: number | null
+  categoryId: number | null
+}
+
+export interface Category {
+  id: number
+  name: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CategoryInput {
+  name: string
 }
 
 export interface SerialPortInfo {

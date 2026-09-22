@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Command, CommandInput } from '@shared/types'
+import { useCategoriesStore } from '../../store/categoriesStore'
 
 interface CommandEditorDialogProps {
   open: boolean
@@ -9,10 +10,12 @@ interface CommandEditorDialogProps {
 }
 
 function CommandEditorDialog({ open, initial, onClose, onSubmit }: CommandEditorDialogProps): React.JSX.Element | null {
+  const categories = useCategoriesStore((state) => state.categories)
   const [name, setName] = useState('')
   const [commandString, setCommandString] = useState('')
   const [enabled, setEnabled] = useState(false)
   const [intervalSeconds, setIntervalSeconds] = useState('')
+  const [categoryId, setCategoryId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -23,6 +26,7 @@ function CommandEditorDialog({ open, initial, onClose, onSubmit }: CommandEditor
     setIntervalSeconds(
       initial?.scheduleIntervalMs != null ? String(Math.round(initial.scheduleIntervalMs / 1000)) : ''
     )
+    setCategoryId(initial?.categoryId ?? null)
   }, [open, initial])
 
   if (!open) return null
@@ -38,7 +42,8 @@ function CommandEditorDialog({ open, initial, onClose, onSubmit }: CommandEditor
         name: name.trim(),
         commandString: commandString.trim(),
         enabled,
-        scheduleIntervalMs: trimmedInterval ? Math.round(Number(trimmedInterval) * 1000) : null
+        scheduleIntervalMs: trimmedInterval ? Math.round(Number(trimmedInterval) * 1000) : null,
+        categoryId
       })
       onClose()
     } finally {
@@ -77,6 +82,22 @@ function CommandEditorDialog({ open, initial, onClose, onSubmit }: CommandEditor
               className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-100 outline-none focus:border-neutral-500"
               placeholder="e.g. AT+STATUS?"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-neutral-400">Category</label>
+            <select
+              value={categoryId ?? ''}
+              onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)}
+              className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-neutral-500"
+            >
+              <option value="">Uncategorized</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
