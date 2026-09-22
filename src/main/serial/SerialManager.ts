@@ -71,7 +71,8 @@ export class SerialManager extends EventEmitter {
       return Promise.reject(new Error('Serial port not connected'))
     }
     return new Promise((resolve, reject) => {
-      this.port!.write(`${data}\n`, (err) => {
+      const buffer = Buffer.from(data, 'hex');
+      this.port!.write(buffer, (err) => {
         if (err) reject(err)
         else resolve()
       })
