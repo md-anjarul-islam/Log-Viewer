@@ -84,6 +84,32 @@ export class LogsRepo {
     return { entries: entries.reverse(), nextCursor }
   }
 
+  // Unpaginated, chronological (oldest first) — used for exporting a full filtered set.
+  queryAll(filter: Omit<LogQueryFilter, 'limit' | 'cursor'>): LogEntry[] {
+    const conditions: string[] = []
+    const params: Record<string, unknown> = {}
+
+    if (filter.commandId != null) {
+      conditions.push('command_id = @commandId')
+      params.commandId = filter.commandId
+    }
+    if (filter.from) {
+      conditions.push('timestamp >= @from')
+      params.from = filter.from
+    }
+    if (filter.to) {
+      conditions.push('timestamp <= @to')
+      params.to = filter.to
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+    const rows = this.db
+      .prepare<Record<string, unknown>, LogRow>(`SELECT * FROM logs ${where} ORDER BY id ASC`)
+      .all(params)
+
+    return rows.map(toLogEntry)
+  }
+
   clearAll(): number {
     return this.db.prepare('DELETE FROM logs').run().changes
   }

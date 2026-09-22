@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useCommandsStore } from '../../store/commandsStore'
 import { isFilterActive, useLogsStore } from '../../store/logsStore'
 
@@ -24,6 +25,27 @@ function LogFilterBar({ onOpenClear }: LogFilterBarProps): React.JSX.Element {
   const setFilter = useLogsStore((s) => s.setFilter)
   const clearFilter = useLogsStore((s) => s.clearFilter)
   const active = isFilterActive(filter)
+
+  const [exportStatus, setExportStatus] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
+
+  const handleExport = async (): Promise<void> => {
+    setExporting(true)
+    setExportStatus(null)
+    try {
+      const result = await window.api.logs.export({
+        commandId: filter.commandId ?? undefined,
+        from: filter.from ?? undefined,
+        to: filter.to ?? undefined
+      })
+      if (!result.canceled) setExportStatus(`Exported ${result.count} line${result.count === 1 ? '' : 's'}`)
+    } catch {
+      setExportStatus('Export failed')
+    } finally {
+      setExporting(false)
+      setTimeout(() => setExportStatus(null), 4000)
+    }
+  }
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -60,12 +82,19 @@ function LogFilterBar({ onOpenClear }: LogFilterBarProps): React.JSX.Element {
         </button>
       )}
 
-      <button
-        onClick={onOpenClear}
-        className="ml-auto rounded-md px-2 py-1 text-xs text-red-400/80 hover:text-red-400"
-      >
-        Clear logs…
-      </button>
+      <div className="ml-auto flex items-center gap-3">
+        {exportStatus && <span className="text-xs text-neutral-500">{exportStatus}</span>}
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-600 hover:text-neutral-100 disabled:opacity-50"
+        >
+          {exporting ? 'Exporting…' : active ? 'Export filtered…' : 'Export…'}
+        </button>
+        <button onClick={onOpenClear} className="rounded-md px-2 py-1 text-xs text-red-400/80 hover:text-red-400">
+          Clear logs…
+        </button>
+      </div>
     </div>
   )
 }
