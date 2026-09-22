@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { LogEntry, LogFormat, LogQueryFilter } from '@shared/types'
+import type { LogEntry, LogQueryFilter } from '@shared/types'
 
 // In-memory ring buffer for the live tail.
 const MAX_ENTRIES = 50000
@@ -7,15 +7,14 @@ const PAGE_SIZE = 200
 
 export interface LogFilterState {
   commandId: number | null
-  format: LogFormat | null
   from: string | null
   to: string | null
 }
 
-export const DEFAULT_FILTER: LogFilterState = { commandId: null, format: null, from: null, to: null }
+export const DEFAULT_FILTER: LogFilterState = { commandId: null, from: null, to: null }
 
 export function isFilterActive(filter: LogFilterState): boolean {
-  return filter.commandId != null || filter.format != null || filter.from != null || filter.to != null
+  return filter.commandId != null || filter.from != null || filter.to != null
 }
 
 interface LogsState {
@@ -38,7 +37,6 @@ interface LogsState {
 function toQueryFilter(filter: LogFilterState, cursor: string | null): LogQueryFilter {
   return {
     commandId: filter.commandId ?? undefined,
-    format: filter.format ?? undefined,
     from: filter.from ?? undefined,
     to: filter.to ?? undefined,
     cursor: cursor ?? undefined,
