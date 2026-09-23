@@ -18,6 +18,9 @@ export const IPC = {
   SERIAL_CONNECT: 'serial:connect',
   SERIAL_DISCONNECT: 'serial:disconnect',
   SERIAL_STATUS: 'serial:status',
+  SERIAL_GET_STATUS: 'serial:getStatus',
+  SERIAL_GET_AUTO_RECONNECT: 'serial:getAutoReconnect',
+  SERIAL_SET_AUTO_RECONNECT: 'serial:setAutoReconnect',
 
   LOGS_STREAM: 'logs:stream',
   LOGS_QUERY: 'logs:query',

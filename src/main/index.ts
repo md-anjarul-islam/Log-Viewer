@@ -6,13 +6,15 @@ import { CommandsRepo } from './db/commandsRepo'
 import { CategoriesRepo } from './db/categoriesRepo'
 import { LogsRepo } from './db/logsRepo'
 import { SerialManager } from './serial/SerialManager'
+import { SettingsStore } from './settings/SettingsStore'
 import { Scheduler } from './scheduler/Scheduler'
 import { LogIngestor } from './logging/LogIngestor'
 import { registerIpcHandlers } from './ipc'
 
 let mainWindow: BrowserWindow | null = null
 let logIngestor: LogIngestor | null = null
-const serialManager = new SerialManager()
+const settingsStore = new SettingsStore()
+const serialManager = new SerialManager(settingsStore)
 const scheduler = new Scheduler((command) => {
   logIngestor?.beginRun(command.id, 'scheduled')
   serialManager.write(command.commandString).catch((err) => {
@@ -72,6 +74,8 @@ app.whenReady().then(() => {
     logIngestor,
     getWindow: () => mainWindow
   })
+
+  serialManager.tryStartReconnectIfEligible()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow()

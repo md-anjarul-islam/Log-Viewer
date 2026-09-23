@@ -39,6 +39,17 @@ export interface SerialStatus {
   connected: boolean
   path?: string
   error?: string
+  reconnecting?: boolean
+}
+
+export interface LastSerialDevice {
+  path: string
+  baudRate: number
+}
+
+export interface AutoReconnectSettings {
+  enabled: boolean
+  lastDevice: LastSerialDevice | null
 }
 
 export interface RunNowResult {
