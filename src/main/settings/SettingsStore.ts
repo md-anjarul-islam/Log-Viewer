@@ -5,6 +5,7 @@ import { join } from 'path'
 export interface LastSerialDevice {
   path: string
   baudRate: number
+  delimiterHex: string
 }
 
 export interface SerialSettings {

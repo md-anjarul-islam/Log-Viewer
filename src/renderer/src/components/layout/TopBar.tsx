@@ -4,6 +4,15 @@ import { useSerialStore } from '../../store/serialStore'
 
 const COMMON_BAUD_RATES = [9600, 19200, 38400, 57600, 115200]
 
+const DELIMITER_PRESETS = [
+  { label: 'EOT (0x04)', hex: '04' },
+  { label: 'LF (\\n)', hex: '0a' },
+  { label: 'CRLF (\\r\\n)', hex: '0d0a' },
+  { label: 'Custom…', hex: 'custom' }
+] as const
+
+const HEX_BYTES_RE = /^([0-9a-fA-F]{2})+$/
+
 function TopBar(): React.JSX.Element {
   useSerialStatus()
   const ports = useSerialStore((s) => s.ports)
@@ -20,6 +29,12 @@ function TopBar(): React.JSX.Element {
 
   const [selectedPath, setSelectedPath] = useState('')
   const [baudRate, setBaudRate] = useState(9600)
+  const [delimiterPreset, setDelimiterPreset] = useState<string>(DELIMITER_PRESETS[0].hex)
+  const [customDelimiterHex, setCustomDelimiterHex] = useState('')
+
+  const isCustomDelimiter = delimiterPreset === 'custom'
+  const delimiterHex = isCustomDelimiter ? customDelimiterHex : delimiterPreset
+  const delimiterValid = HEX_BYTES_RE.test(delimiterHex)
 
   useEffect(() => {
     if (!selectedPath && ports.length > 0) {
@@ -85,6 +100,28 @@ function TopBar(): React.JSX.Element {
             ))}
           </select>
 
+          <select
+            value={delimiterPreset}
+            onChange={(e) => setDelimiterPreset(e.target.value)}
+            className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200"
+          >
+            {DELIMITER_PRESETS.map((preset) => (
+              <option key={preset.hex} value={preset.hex}>
+                {preset.label}
+              </option>
+            ))}
+          </select>
+
+          {isCustomDelimiter && (
+            <input
+              type="text"
+              value={customDelimiterHex}
+              onChange={(e) => setCustomDelimiterHex(e.target.value)}
+              placeholder="hex bytes, e.g. 04"
+              className="w-24 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200"
+            />
+          )}
+
           <button
             onClick={() => refreshPorts()}
             disabled={loadingPorts}
@@ -94,8 +131,8 @@ function TopBar(): React.JSX.Element {
           </button>
 
           <button
-            onClick={() => selectedPath && connect(selectedPath, baudRate)}
-            disabled={!selectedPath || connecting}
+            onClick={() => selectedPath && connect(selectedPath, baudRate, delimiterHex)}
+            disabled={!selectedPath || connecting || !delimiterValid}
             className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
           >
             {connecting ? 'Connecting…' : 'Connect'}
