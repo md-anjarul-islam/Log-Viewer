@@ -1,15 +1,26 @@
 import { EventEmitter } from 'events'
 import { SerialPort } from 'serialport'
 import { ReadlineParser } from '@serialport/parser-readline'
-import type { SerialPortInfo, SerialStatus } from '@shared/types'
+import type { AutoReconnectSettings, SerialPortInfo, SerialStatus } from '@shared/types'
+import type { SettingsStore } from '../settings/SettingsStore'
+
+const RECONNECT_POLL_INTERVAL_MS = 3000
 
 // Emits 'line' (string) and 'status-change' (SerialStatus).
-// Owns a single serial connection at a time. Never auto-reconnects on an
-// unexpected close/error — surfaces the status change and leaves reconnection
-// to an explicit user action, since silently retrying against half-connected
-// hardware can spam the device.
+// Owns a single serial connection at a time. A close/error from the port
+// itself never retries on its own; it only starts polling for the
+// remembered device to reappear when auto-reconnect is enabled AND the
+// disconnect wasn't user-initiated, so silently retrying against
+// half-connected hardware after an explicit user disconnect never happens.
 export class SerialManager extends EventEmitter {
   private port: SerialPort | null = null
+  private manualDisconnect = false
+  private reconnecting = false
+  private reconnectTimer: ReturnType<typeof setInterval> | null = null
+
+  constructor(private settings: SettingsStore) {
+    super()
+  }
 
   async listPorts(): Promise<SerialPortInfo[]> {
     const ports = await SerialPort.list()
@@ -25,7 +36,12 @@ export class SerialManager extends EventEmitter {
     if (this.port?.isOpen) {
       throw new Error('Already connected; disconnect first')
     }
+    this.manualDisconnect = false
+    this.stopReconnectLoop()
+    return this.open(path, baudRate)
+  }
 
+  private open(path: string, baudRate: number): Promise<void> {
     return new Promise((resolve, reject) => {
       const port = new SerialPort({ path, baudRate, autoOpen: false })
 
@@ -36,24 +52,30 @@ export class SerialManager extends EventEmitter {
         }
 
         this.port = port
+        this.settings.setLastDevice({ path, baudRate })
         const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }))
         parser.on('data', (line: string) => this.emit('line', line))
 
         port.on('close', () => {
           this.port = null
-          this.emit('status-change', { connected: false })
+          this.emit('status-change', this.buildStatus(false))
+          if (!this.manualDisconnect && this.settings.getSerialSettings().autoReconnect) {
+            this.startReconnectLoop(path, baudRate)
+          }
         })
         port.on('error', (portErr: Error) => {
-          this.emit('status-change', { connected: false, path, error: portErr.message })
+          this.emit('status-change', this.buildStatus(false, path, portErr.message))
         })
 
-        this.emit('status-change', { connected: true, path })
+        this.emit('status-change', this.buildStatus(true, path))
         resolve()
       })
     })
   }
 
   disconnect(): Promise<void> {
+    this.manualDisconnect = true
+    this.stopReconnectLoop()
     if (!this.port?.isOpen) {
       this.port = null
       return Promise.resolve()
@@ -71,7 +93,7 @@ export class SerialManager extends EventEmitter {
       return Promise.reject(new Error('Serial port not connected'))
     }
     return new Promise((resolve, reject) => {
-      const buffer = Buffer.from(data, 'hex');
+      const buffer = Buffer.from(data, 'hex')
       this.port!.write(buffer, (err) => {
         if (err) reject(err)
         else resolve()
@@ -80,6 +102,74 @@ export class SerialManager extends EventEmitter {
   }
 
   getStatus(): SerialStatus {
-    return this.port?.isOpen ? { connected: true, path: this.port.path } : { connected: false }
+    if (this.port?.isOpen) {
+      return { connected: true, path: this.port.path }
+    }
+    return this.buildStatus(false)
+  }
+
+  getAutoReconnect(): AutoReconnectSettings {
+    const s = this.settings.getSerialSettings()
+    return { enabled: s.autoReconnect, lastDevice: s.lastDevice }
+  }
+
+  setAutoReconnect(enabled: boolean): AutoReconnectSettings {
+    this.settings.setAutoReconnect(enabled)
+    if (!enabled) {
+      this.stopReconnectLoop()
+    } else {
+      this.tryStartReconnectIfEligible()
+    }
+    return this.getAutoReconnect()
+  }
+
+  // Called once at app startup so a remembered device is picked back up
+  // without needing a live disconnect event to trigger the loop first.
+  tryStartReconnectIfEligible(): void {
+    if (this.port?.isOpen || this.reconnecting) return
+    const { autoReconnect, lastDevice } = this.settings.getSerialSettings()
+    if (!autoReconnect || !lastDevice) return
+    this.manualDisconnect = false
+    this.startReconnectLoop(lastDevice.path, lastDevice.baudRate)
+  }
+
+  private startReconnectLoop(path: string, baudRate: number): void {
+    if (this.reconnecting) return
+    this.reconnecting = true
+    this.emit('status-change', this.buildStatus(false))
+
+    const attempt = async (): Promise<void> => {
+      if (!this.reconnecting) return
+      const available = await this.listPorts()
+      if (!available.some((p) => p.path === path)) return
+      try {
+        await this.open(path, baudRate)
+        this.stopReconnectLoop()
+      } catch {
+        // Port is enumerated but not yet openable (still settling after
+        // being plugged in); keep polling on the next tick.
+      }
+    }
+
+    this.reconnectTimer = setInterval(() => attempt(), RECONNECT_POLL_INTERVAL_MS)
+    attempt()
+  }
+
+  private stopReconnectLoop(): void {
+    if (this.reconnectTimer) {
+      clearInterval(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    if (this.reconnecting) {
+      this.reconnecting = false
+      this.emit('status-change', this.buildStatus(false))
+    }
+  }
+
+  private buildStatus(connected: true, path?: string): SerialStatus
+  private buildStatus(connected: false, path?: string, error?: string): SerialStatus
+  private buildStatus(connected: boolean, path?: string, error?: string): SerialStatus {
+    if (connected) return { connected: true, path }
+    return { connected: false, path, error, reconnecting: this.reconnecting }
   }
 }
