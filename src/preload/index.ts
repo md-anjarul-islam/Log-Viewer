@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type {
+  AutoReconnectSettings,
   Category,
   CategoryInput,
   ClearLogsResult,
@@ -52,11 +53,16 @@ const api = {
     connect: (path: string, baudRate: number): Promise<{ ok: true } | { ok: false; error: string }> =>
       ipcRenderer.invoke(IPC.SERIAL_CONNECT, path, baudRate),
     disconnect: (): Promise<void> => ipcRenderer.invoke(IPC.SERIAL_DISCONNECT),
+    getStatus: (): Promise<SerialStatus> => ipcRenderer.invoke(IPC.SERIAL_GET_STATUS),
     onStatus: (callback: (status: SerialStatus) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, status: SerialStatus): void => callback(status)
       ipcRenderer.on(IPC.SERIAL_STATUS, listener)
       return () => ipcRenderer.removeListener(IPC.SERIAL_STATUS, listener)
-    }
+    },
+    getAutoReconnect: (): Promise<AutoReconnectSettings> =>
+      ipcRenderer.invoke(IPC.SERIAL_GET_AUTO_RECONNECT),
+    setAutoReconnect: (enabled: boolean): Promise<AutoReconnectSettings> =>
+      ipcRenderer.invoke(IPC.SERIAL_SET_AUTO_RECONNECT, enabled)
   },
 
   logs: {

@@ -22,4 +22,12 @@ export function registerSerialHandlers(
   })
 
   ipcMain.handle(IPC.SERIAL_DISCONNECT, () => serialManager.disconnect())
+
+  ipcMain.handle(IPC.SERIAL_GET_STATUS, () => serialManager.getStatus())
+
+  ipcMain.handle(IPC.SERIAL_GET_AUTO_RECONNECT, () => serialManager.getAutoReconnect())
+
+  ipcMain.handle(IPC.SERIAL_SET_AUTO_RECONNECT, (_event, enabled: boolean) =>
+    serialManager.setAutoReconnect(enabled)
+  )
 }

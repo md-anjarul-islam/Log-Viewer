@@ -11,9 +11,12 @@ function TopBar(): React.JSX.Element {
   const loadingPorts = useSerialStore((s) => s.loadingPorts)
   const connecting = useSerialStore((s) => s.connecting)
   const lastError = useSerialStore((s) => s.lastError)
+  const autoReconnect = useSerialStore((s) => s.autoReconnect)
+  const lastDevice = useSerialStore((s) => s.lastDevice)
   const refreshPorts = useSerialStore((s) => s.refreshPorts)
   const connect = useSerialStore((s) => s.connect)
   const disconnect = useSerialStore((s) => s.disconnect)
+  const setAutoReconnect = useSerialStore((s) => s.setAutoReconnect)
 
   const [selectedPath, setSelectedPath] = useState('')
   const [baudRate, setBaudRate] = useState(9600)
@@ -28,16 +31,50 @@ function TopBar(): React.JSX.Element {
     <div className="flex items-center gap-3 border-b border-neutral-800 bg-neutral-950 px-4 py-2.5">
       <div className="flex items-center gap-2">
         <span
-          className={`h-2 w-2 rounded-full ${status.connected ? 'bg-emerald-500' : 'bg-neutral-600'}`}
+          className={`h-2 w-2 rounded-full ${
+            status.connected
+              ? 'bg-emerald-500'
+              : status.reconnecting
+                ? 'animate-pulse bg-amber-500'
+                : 'bg-neutral-600'
+          }`}
         />
         <span className="text-xs text-neutral-400">
-          {status.connected ? `Connected — ${status.path}` : 'Disconnected'}
+          {status.connected
+            ? `Connected — ${status.path}`
+            : status.reconnecting
+              ? `Reconnecting to ${lastDevice?.path ?? 'device'}…`
+              : 'Disconnected'}
         </span>
       </div>
 
       <div className="mx-2 h-4 w-px bg-neutral-800" />
 
-      {!status.connected ? (
+      <button
+        onClick={() => setAutoReconnect(!autoReconnect)}
+        title="Automatically reconnect to the last device when it becomes available again"
+        className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ${
+          autoReconnect
+            ? 'bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30'
+            : 'text-neutral-400 hover:text-neutral-200'
+        }`}
+      >
+        <span
+          className={`h-2 w-2 rounded-full ${autoReconnect ? 'bg-indigo-400' : 'bg-neutral-600'}`}
+        />
+        Auto-reconnect
+      </button>
+
+      <div className="mx-2 h-4 w-px bg-neutral-800" />
+
+      {status.reconnecting ? (
+        <button
+          onClick={() => disconnect()}
+          className="rounded-md bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-200 hover:bg-neutral-700"
+        >
+          Cancel
+        </button>
+      ) : !status.connected ? (
         <>
           <select
             value={selectedPath}
