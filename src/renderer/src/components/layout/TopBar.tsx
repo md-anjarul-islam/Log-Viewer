@@ -50,23 +50,6 @@ function TopBar(): React.JSX.Element {
 
       <div className="mx-2 h-4 w-px bg-neutral-800" />
 
-      <button
-        onClick={() => setAutoReconnect(!autoReconnect)}
-        title="Automatically reconnect to the last device when it becomes available again"
-        className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ${
-          autoReconnect
-            ? 'bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30'
-            : 'text-neutral-400 hover:text-neutral-200'
-        }`}
-      >
-        <span
-          className={`h-2 w-2 rounded-full ${autoReconnect ? 'bg-indigo-400' : 'bg-neutral-600'}`}
-        />
-        Auto-reconnect
-      </button>
-
-      <div className="mx-2 h-4 w-px bg-neutral-800" />
-
       {status.reconnecting ? (
         <button
           onClick={() => disconnect()}
@@ -126,6 +109,28 @@ function TopBar(): React.JSX.Element {
           Disconnect
         </button>
       )}
+
+      <label
+        className="flex items-center gap-1.5 text-xs text-neutral-400"
+        title="Automatically reconnect to the last device when it becomes available again"
+      >
+        <span>Auto-reconnect</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoReconnect}
+          onClick={() => setAutoReconnect(!autoReconnect)}
+          className={`relative h-4 w-8 shrink-0 rounded-full transition-colors ${
+            autoReconnect ? 'bg-indigo-600' : 'bg-neutral-700'
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white transition-transform ${
+              autoReconnect ? 'translate-x-4' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </label>
 
       {lastError && <span className="text-xs text-red-400">{lastError}</span>}
     </div>
