@@ -144,7 +144,7 @@ export class SerialManager extends EventEmitter {
       if (!available.some((p) => p.path === path)) return
       try {
         await this.open(path, baudRate)
-        this.stopReconnectLoop()
+        this.clearReconnectState()
       } catch {
         // Port is enumerated but not yet openable (still settling after
         // being plugged in); keep polling on the next tick.
@@ -155,13 +155,24 @@ export class SerialManager extends EventEmitter {
     attempt()
   }
 
-  private stopReconnectLoop(): void {
+  // Resets the loop's own bookkeeping without emitting a status-change.
+  // Used when the reconnect attempt just succeeded, so the 'connected: true'
+  // status already emitted by open() isn't immediately clobbered by a
+  // trailing 'connected: false' from here.
+  private clearReconnectState(): void {
     if (this.reconnectTimer) {
       clearInterval(this.reconnectTimer)
       this.reconnectTimer = null
     }
-    if (this.reconnecting) {
-      this.reconnecting = false
+    this.reconnecting = false
+  }
+
+  // Cancels an in-progress reconnect loop (auto-reconnect disabled, or the
+  // user cancelled it) and notifies listeners that it's no longer trying.
+  private stopReconnectLoop(): void {
+    const wasReconnecting = this.reconnecting
+    this.clearReconnectState()
+    if (wasReconnecting) {
       this.emit('status-change', this.buildStatus(false))
     }
   }
