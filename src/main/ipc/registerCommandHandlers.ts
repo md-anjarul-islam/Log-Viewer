@@ -15,18 +15,17 @@ import type { Scheduler } from '../scheduler/Scheduler'
 import type { SerialManager } from '../serial/SerialManager'
 
 function formatIntervalForExport(ms: number | null): string {
-  if (ms == null) return 'Manual only'
-  const seconds = ms / 1000
-  return seconds % 60 === 0 ? `Every ${seconds / 60} min` : `Every ${seconds}s`
+  if (ms == null) return ''
+  return `${ms / 1000} s`
 }
 
 function parseIntervalFromImport(scheduleTime: unknown): number | null {
   if (typeof scheduleTime !== 'string') return null
-  const minuteMatch = scheduleTime.match(/^Every (\d+(?:\.\d+)?) min$/)
-  if (minuteMatch) return Number(minuteMatch[1]) * 60 * 1000
-  const secondMatch = scheduleTime.match(/^Every (\d+(?:\.\d+)?)s$/)
-  if (secondMatch) return Number(secondMatch[1]) * 1000
-  return null
+  const trimmed = scheduleTime.trim()
+  if (!trimmed) return null
+  const match = trimmed.match(/^(\d+(?:\.\d+)?) ?s$/)
+  if (!match) return null
+  return Number(match[1]) * 1000
 }
 
 interface ImportedCommandEntry {
