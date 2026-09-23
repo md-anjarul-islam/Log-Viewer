@@ -23,7 +23,14 @@ interface IpcDeps {
 
 export function registerIpcHandlers(deps: IpcDeps): void {
   ipcMain.handle(IPC.APP_GET_VERSION, () => app.getVersion())
-  registerCommandHandlers(deps.commandsRepo, deps.serialManager, deps.scheduler, deps.logIngestor, deps.getWindow)
+  registerCommandHandlers(
+    deps.commandsRepo,
+    deps.categoriesRepo,
+    deps.serialManager,
+    deps.scheduler,
+    deps.logIngestor,
+    deps.getWindow
+  )
   registerCategoryHandlers(deps.categoriesRepo, deps.commandsRepo, deps.getWindow)
   registerSerialHandlers(deps.serialManager, deps.getWindow)
   registerLogHandlers(deps.logsRepo, deps.getWindow)

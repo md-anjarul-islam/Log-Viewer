@@ -16,6 +16,22 @@ function CommandsView(): React.JSX.Element {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Command | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportStatus, setExportStatus] = useState<string | null>(null)
+
+  async function handleExport(): Promise<void> {
+    setExporting(true)
+    setExportStatus(null)
+    try {
+      const result = await window.api.commands.export()
+      if (!result.canceled) setExportStatus(`Exported ${result.count} command${result.count === 1 ? '' : 's'}`)
+    } catch {
+      setExportStatus('Export failed')
+    } finally {
+      setExporting(false)
+      setTimeout(() => setExportStatus(null), 4000)
+    }
+  }
 
   function openCreate(): void {
     setEditing(null)
@@ -37,12 +53,22 @@ function CommandsView(): React.JSX.Element {
     <div className="flex h-full flex-col p-6">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-neutral-100">Commands</h1>
-        <button
-          onClick={openCreate}
-          className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
-        >
-          New command
-        </button>
+        <div className="flex items-center gap-3">
+          {exportStatus && <span className="text-xs text-neutral-500">{exportStatus}</span>}
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="rounded-md border border-neutral-700 px-2 py-1.5 text-sm text-neutral-300 hover:border-neutral-600 hover:text-neutral-100 disabled:opacity-50"
+          >
+            {exporting ? 'Exporting…' : 'Export…'}
+          </button>
+          <button
+            onClick={openCreate}
+            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
+          >
+            New command
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto rounded-lg border border-neutral-800 bg-neutral-900 p-4">
