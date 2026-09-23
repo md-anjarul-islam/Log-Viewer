@@ -7,6 +7,7 @@ export const IPC = {
   COMMANDS_DELETE: 'commands:delete',
   COMMANDS_CHANGED: 'commands:changed',
   COMMANDS_RUN_NOW: 'commands:runNow',
+  COMMANDS_EXPORT: 'commands:export',
 
   CATEGORIES_LIST: 'categories:list',
   CATEGORIES_CREATE: 'categories:create',

@@ -45,6 +45,12 @@ export interface RunNowResult {
   runId: string
 }
 
+export interface CommandExportResult {
+  canceled: boolean
+  filePath?: string
+  count?: number
+}
+
 export type LogSource = 'manual' | 'scheduled' | 'unsolicited'
 
 export interface LogEntry {
