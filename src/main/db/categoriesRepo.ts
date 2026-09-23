@@ -34,6 +34,13 @@ export class CategoriesRepo {
     return row ? toCategory(row) : undefined
   }
 
+  findByName(name: string): Category | undefined {
+    const row = this.db
+      .prepare<[string], CategoryRow>('SELECT * FROM categories WHERE name = ?')
+      .get(name)
+    return row ? toCategory(row) : undefined
+  }
+
   create(input: CategoryInput): Category {
     const result = this.db.prepare('INSERT INTO categories (name) VALUES (@name)').run({
       name: input.name

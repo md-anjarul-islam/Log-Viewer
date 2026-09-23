@@ -7,6 +7,7 @@ import type {
   ClearLogsResult,
   Command,
   CommandExportResult,
+  CommandImportResult,
   CommandInput,
   LogEntry,
   LogExportFilter,
@@ -30,6 +31,7 @@ const api = {
     delete: (id: number): Promise<void> => ipcRenderer.invoke(IPC.COMMANDS_DELETE, id),
     runNow: (id: number): Promise<RunNowResult> => ipcRenderer.invoke(IPC.COMMANDS_RUN_NOW, id),
     export: (): Promise<CommandExportResult> => ipcRenderer.invoke(IPC.COMMANDS_EXPORT),
+    import: (): Promise<CommandImportResult> => ipcRenderer.invoke(IPC.COMMANDS_IMPORT),
     onChanged: (callback: (commands: Command[]) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, commands: Command[]): void => callback(commands)
       ipcRenderer.on(IPC.COMMANDS_CHANGED, listener)

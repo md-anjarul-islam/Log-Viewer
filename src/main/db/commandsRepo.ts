@@ -42,6 +42,13 @@ export class CommandsRepo {
     return row ? toCommand(row) : undefined
   }
 
+  findByName(name: string): Command | undefined {
+    const row = this.db
+      .prepare<[string], CommandRow>('SELECT * FROM commands WHERE name = ?')
+      .get(name)
+    return row ? toCommand(row) : undefined
+  }
+
   create(input: CommandInput): Command {
     const result = this.db
       .prepare(
