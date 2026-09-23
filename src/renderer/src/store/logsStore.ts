@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { LogEntry, LogQueryFilter } from '@shared/types'
+import { DEFAULT_SEARCH, type SearchState } from '../lib/logSearch'
 
 // In-memory ring buffer for the live tail.
 const MAX_ENTRIES = 50000
@@ -32,6 +33,12 @@ interface LogsState {
   setFilter: (patch: Partial<LogFilterState>) => void
   clearFilter: () => void
   runQuery: (loadMore?: boolean) => Promise<void>
+
+  // Text/regex search — applied client-side on top of whatever is currently
+  // loaded (live tail or historical results), so it never touches the DB.
+  search: SearchState
+  setSearch: (patch: Partial<SearchState>) => void
+  clearSearch: () => void
 }
 
 function toQueryFilter(filter: LogFilterState, cursor: string | null): LogQueryFilter {
@@ -66,7 +73,8 @@ export const useLogsStore = create<LogsState>((set, get) => ({
     if (isFilterActive(filter)) get().runQuery()
   },
 
-  clearFilter: () => set({ filter: DEFAULT_FILTER, historicalResults: [], historicalCursor: null }),
+  clearFilter: () =>
+    set({ filter: DEFAULT_FILTER, historicalResults: [], historicalCursor: null, search: DEFAULT_SEARCH }),
 
   runQuery: async (loadMore = false) => {
     const { filter, historicalCursor, historicalResults } = get()
@@ -77,5 +85,9 @@ export const useLogsStore = create<LogsState>((set, get) => ({
       historicalCursor: result.nextCursor,
       historicalLoading: false
     })
-  }
+  },
+
+  search: DEFAULT_SEARCH,
+  setSearch: (patch) => set((state) => ({ search: { ...state.search, ...patch } })),
+  clearSearch: () => set({ search: DEFAULT_SEARCH })
 }))
