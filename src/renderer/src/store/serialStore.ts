@@ -10,7 +10,7 @@ interface SerialState {
   autoReconnect: boolean
   lastDevice: LastSerialDevice | null
   refreshPorts: () => Promise<void>
-  connect: (path: string, baudRate: number) => Promise<void>
+  connect: (path: string, baudRate: number, delimiterHex: string) => Promise<void>
   disconnect: () => Promise<void>
   loadAutoReconnect: () => Promise<void>
   setAutoReconnect: (enabled: boolean) => Promise<void>
@@ -31,9 +31,9 @@ export const useSerialStore = create<SerialState>((set) => ({
     set({ ports, loadingPorts: false })
   },
 
-  connect: async (path, baudRate) => {
+  connect: async (path, baudRate, delimiterHex) => {
     set({ connecting: true, lastError: null })
-    const result = await window.api.serial.connect(path, baudRate)
+    const result = await window.api.serial.connect(path, baudRate, delimiterHex)
     set({ connecting: false, lastError: result.ok ? null : result.error })
   },
 

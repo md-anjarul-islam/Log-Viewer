@@ -12,14 +12,17 @@ export function registerSerialHandlers(
 
   ipcMain.handle(IPC.SERIAL_LIST_PORTS, () => serialManager.listPorts())
 
-  ipcMain.handle(IPC.SERIAL_CONNECT, async (_event, path: string, baudRate: number) => {
-    try {
-      await serialManager.connect(path, baudRate)
-      return { ok: true as const }
-    } catch (err) {
-      return { ok: false as const, error: err instanceof Error ? err.message : String(err) }
+  ipcMain.handle(
+    IPC.SERIAL_CONNECT,
+    async (_event, path: string, baudRate: number, delimiterHex: string) => {
+      try {
+        await serialManager.connect(path, baudRate, delimiterHex)
+        return { ok: true as const }
+      } catch (err) {
+        return { ok: false as const, error: err instanceof Error ? err.message : String(err) }
+      }
     }
-  })
+  )
 
   ipcMain.handle(IPC.SERIAL_DISCONNECT, () => serialManager.disconnect())
 

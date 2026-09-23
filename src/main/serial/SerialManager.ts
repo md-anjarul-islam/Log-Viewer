@@ -6,6 +6,17 @@ import type { SettingsStore } from '../settings/SettingsStore'
 
 const RECONNECT_POLL_INTERVAL_MS = 3000
 
+// Falls back to EOT (0x04) — the delimiter our supported hardware actually
+// frames records with — whenever a caller omits it or supplies invalid hex.
+const DEFAULT_DELIMITER_HEX = '04'
+
+function resolveDelimiter(delimiterHex: string | undefined): Buffer {
+  if (delimiterHex && /^([0-9a-fA-F]{2})+$/.test(delimiterHex)) {
+    return Buffer.from(delimiterHex, 'hex')
+  }
+  return Buffer.from(DEFAULT_DELIMITER_HEX, 'hex')
+}
+
 // Emits 'line' (string) and 'status-change' (SerialStatus).
 // Owns a single serial connection at a time. A close/error from the port
 // itself never retries on its own; it only starts polling for the
@@ -32,16 +43,16 @@ export class SerialManager extends EventEmitter {
     }))
   }
 
-  connect(path: string, baudRate: number): Promise<void> {
+  connect(path: string, baudRate: number, delimiterHex: string): Promise<void> {
     if (this.port?.isOpen) {
       throw new Error('Already connected; disconnect first')
     }
     this.manualDisconnect = false
     this.stopReconnectLoop()
-    return this.open(path, baudRate)
+    return this.open(path, baudRate, delimiterHex)
   }
 
-  private open(path: string, baudRate: number): Promise<void> {
+  private open(path: string, baudRate: number, delimiterHex: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const port = new SerialPort({ path, baudRate, autoOpen: false })
 
@@ -52,15 +63,15 @@ export class SerialManager extends EventEmitter {
         }
 
         this.port = port
-        this.settings.setLastDevice({ path, baudRate })
-        const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }))
+        this.settings.setLastDevice({ path, baudRate, delimiterHex })
+        const parser = port.pipe(new ReadlineParser({ delimiter: resolveDelimiter(delimiterHex) }))
         parser.on('data', (line: string) => this.emit('line', line))
 
         port.on('close', () => {
           this.port = null
           this.emit('status-change', this.buildStatus(false))
           if (!this.manualDisconnect && this.settings.getSerialSettings().autoReconnect) {
-            this.startReconnectLoop(path, baudRate)
+            this.startReconnectLoop(path, baudRate, delimiterHex)
           }
         })
         port.on('error', (portErr: Error) => {
@@ -130,10 +141,10 @@ export class SerialManager extends EventEmitter {
     const { autoReconnect, lastDevice } = this.settings.getSerialSettings()
     if (!autoReconnect || !lastDevice) return
     this.manualDisconnect = false
-    this.startReconnectLoop(lastDevice.path, lastDevice.baudRate)
+    this.startReconnectLoop(lastDevice.path, lastDevice.baudRate, lastDevice.delimiterHex)
   }
 
-  private startReconnectLoop(path: string, baudRate: number): void {
+  private startReconnectLoop(path: string, baudRate: number, delimiterHex: string): void {
     if (this.reconnecting) return
     this.reconnecting = true
     this.emit('status-change', this.buildStatus(false))
@@ -143,7 +154,7 @@ export class SerialManager extends EventEmitter {
       const available = await this.listPorts()
       if (!available.some((p) => p.path === path)) return
       try {
-        await this.open(path, baudRate)
+        await this.open(path, baudRate, delimiterHex)
         this.clearReconnectState()
       } catch {
         // Port is enumerated but not yet openable (still settling after
