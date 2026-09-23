@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useCommandsStore } from '../../store/commandsStore'
 import { isFilterActive, useLogsStore } from '../../store/logsStore'
+import { compileSearch, isSearchActive } from '../../lib/logSearch'
 
 interface LogFilterBarProps {
   onOpenClear: () => void
@@ -24,7 +25,14 @@ function LogFilterBar({ onOpenClear }: LogFilterBarProps): React.JSX.Element {
   const filter = useLogsStore((s) => s.filter)
   const setFilter = useLogsStore((s) => s.setFilter)
   const clearFilter = useLogsStore((s) => s.clearFilter)
-  const active = isFilterActive(filter)
+  const search = useLogsStore((s) => s.search)
+  const setSearch = useLogsStore((s) => s.setSearch)
+  const active = isFilterActive(filter) || isSearchActive(search)
+
+  const compiledSearch = useMemo(
+    () => compileSearch(search),
+    [search.term, search.mode, search.caseSensitive]
+  )
 
   const [exportStatus, setExportStatus] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -49,6 +57,58 @@ function LogFilterBar({ onOpenClear }: LogFilterBarProps): React.JSX.Element {
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1">
+        <div className="relative">
+          <input
+            type="text"
+            value={search.term}
+            onChange={(e) => setSearch({ term: e.target.value })}
+            placeholder={search.mode === 'regex' ? 'Filter by regex…' : 'Filter by text…'}
+            spellCheck={false}
+            className={`w-56 rounded-md border bg-neutral-900 px-2 py-1 pr-6 text-xs text-neutral-200 placeholder:text-neutral-600 ${
+              compiledSearch.error ? 'border-red-700' : 'border-neutral-700'
+            }`}
+          />
+          {search.term && (
+            <button
+              type="button"
+              onClick={() => setSearch({ term: '' })}
+              aria-label="Clear search"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => setSearch({ mode: search.mode === 'regex' ? 'text' : 'regex' })}
+          aria-pressed={search.mode === 'regex'}
+          title="Toggle regex mode"
+          className={`rounded-md border px-1.5 py-1 font-mono text-[10px] ${
+            search.mode === 'regex'
+              ? 'border-indigo-500 bg-indigo-900/50 text-indigo-300'
+              : 'border-neutral-700 text-neutral-400 hover:text-neutral-200'
+          }`}
+        >
+          .*
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearch({ caseSensitive: !search.caseSensitive })}
+          aria-pressed={search.caseSensitive}
+          title="Toggle case sensitivity"
+          className={`rounded-md border px-1.5 py-1 text-[10px] font-semibold ${
+            search.caseSensitive
+              ? 'border-indigo-500 bg-indigo-900/50 text-indigo-300'
+              : 'border-neutral-700 text-neutral-400 hover:text-neutral-200'
+          }`}
+        >
+          Aa
+        </button>
+      </div>
+      {compiledSearch.error && <span className="text-xs text-red-400">Invalid regex: {compiledSearch.error}</span>}
+
       <select
         value={filter.commandId ?? ''}
         onChange={(e) => setFilter({ commandId: e.target.value ? Number(e.target.value) : null })}

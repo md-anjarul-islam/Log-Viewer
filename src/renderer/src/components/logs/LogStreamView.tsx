@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { LogEntry } from '@shared/types'
 import { isFilterActive, useLogsStore } from '../../store/logsStore'
+import { compileSearch, isSearchActive, matchesSearch } from '../../lib/logSearch'
 import { useAutoScroll } from '../../hooks/useAutoScroll'
 import LogRow from './LogRow'
 import LogFilterBar from './LogFilterBar'
@@ -15,9 +16,20 @@ function LogStreamView(): React.JSX.Element {
   const historicalCursor = useLogsStore((s) => s.historicalCursor)
   const historicalLoading = useLogsStore((s) => s.historicalLoading)
   const runQuery = useLogsStore((s) => s.runQuery)
+  const search = useLogsStore((s) => s.search)
 
   const filtered = isFilterActive(filter)
-  const entries = filtered ? historicalResults : liveEntries
+  const baseEntries = filtered ? historicalResults : liveEntries
+
+  const compiledSearch = useMemo(
+    () => compileSearch(search),
+    [search.term, search.mode, search.caseSensitive]
+  )
+  const searching = isSearchActive(search)
+  const entries = useMemo(
+    () => (searching ? baseEntries.filter((e) => matchesSearch(e.raw, compiledSearch)) : baseEntries),
+    [baseEntries, searching, compiledSearch]
+  )
 
   const parentRef = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState<LogEntry | null>(null)
@@ -44,9 +56,11 @@ function LogStreamView(): React.JSX.Element {
       <div ref={parentRef} className="flex-1 overflow-auto rounded-lg border border-neutral-800 bg-neutral-900">
         {entries.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-neutral-600">
-            {filtered
-              ? 'No logs match the current filters.'
-              : 'Connect to a serial device and run a command to see logs here.'}
+            {baseEntries.length > 0
+              ? 'No logs match the current search.'
+              : filtered
+                ? 'No logs match the current filters.'
+                : 'Connect to a serial device and run a command to see logs here.'}
           </div>
         ) : (
           <>
@@ -75,7 +89,7 @@ function LogStreamView(): React.JSX.Element {
                     transform: `translateY(${virtualRow.start}px)`
                   }}
                 >
-                  <LogRow entry={entries[virtualRow.index]} onSelect={setSelected} />
+                  <LogRow entry={entries[virtualRow.index]} onSelect={setSelected} highlight={compiledSearch} />
                 </div>
               ))}
             </div>
