@@ -52,8 +52,12 @@ const api = {
 
   serial: {
     listPorts: (): Promise<SerialPortInfo[]> => ipcRenderer.invoke(IPC.SERIAL_LIST_PORTS),
-    connect: (path: string, baudRate: number): Promise<{ ok: true } | { ok: false; error: string }> =>
-      ipcRenderer.invoke(IPC.SERIAL_CONNECT, path, baudRate),
+    connect: (
+      path: string,
+      baudRate: number,
+      delimiterHex: string
+    ): Promise<{ ok: true } | { ok: false; error: string }> =>
+      ipcRenderer.invoke(IPC.SERIAL_CONNECT, path, baudRate, delimiterHex),
     disconnect: (): Promise<void> => ipcRenderer.invoke(IPC.SERIAL_DISCONNECT),
     getStatus: (): Promise<SerialStatus> => ipcRenderer.invoke(IPC.SERIAL_GET_STATUS),
     onStatus: (callback: (status: SerialStatus) => void): (() => void) => {
