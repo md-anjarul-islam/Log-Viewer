@@ -63,6 +63,16 @@ export interface CommandExportResult {
   count?: number
 }
 
+export interface CommandImportResult {
+  canceled: boolean
+  filePath?: string
+  commandsImported?: number
+  commandsSkipped?: number
+  categoriesImported?: number
+  categoriesSkipped?: number
+  errors?: string[]
+}
+
 export type LogSource = 'manual' | 'scheduled' | 'unsolicited'
 
 export interface LogEntry {
