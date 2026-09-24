@@ -80,6 +80,8 @@ export interface LogEntry {
   commandId: number | null
   runId: string | null
   timestamp: string
+  // Hex string of the raw bytes received (e.g. "48656c6c6f"), not decoded
+  // text — hardware payloads aren't assumed to be valid text in any encoding.
   raw: string
   source: LogSource
 }

@@ -3,6 +3,12 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import type { LogEntry } from '@shared/types'
 import { isFilterActive, useLogsStore } from '../../store/logsStore'
 import { compileSearch, isSearchActive, matchesSearch } from '../../lib/logSearch'
+import {
+  BYTE_ENCODING_MODES,
+  DEFAULT_BYTE_ENCODING_MODE,
+  encodeForDisplay,
+  type ByteEncodingMode
+} from '../../lib/byteEncoding'
 import { useAutoScroll } from '../../hooks/useAutoScroll'
 import LogRow from './LogRow'
 import LogFilterBar from './LogFilterBar'
@@ -21,14 +27,20 @@ function LogStreamView(): React.JSX.Element {
   const filtered = isFilterActive(filter)
   const baseEntries = filtered ? historicalResults : liveEntries
 
+  // View-only, unpersisted: resets to hex on every app launch.
+  const [mode, setMode] = useState<ByteEncodingMode>(DEFAULT_BYTE_ENCODING_MODE)
+
   const compiledSearch = useMemo(
     () => compileSearch(search),
     [search.term, search.mode, search.caseSensitive]
   )
   const searching = isSearchActive(search)
   const entries = useMemo(
-    () => (searching ? baseEntries.filter((e) => matchesSearch(e.raw, compiledSearch)) : baseEntries),
-    [baseEntries, searching, compiledSearch]
+    () =>
+      searching
+        ? baseEntries.filter((e) => matchesSearch(encodeForDisplay(e.raw, mode), compiledSearch))
+        : baseEntries,
+    [baseEntries, searching, compiledSearch, mode]
   )
 
   const parentRef = useRef<HTMLDivElement>(null)
@@ -47,7 +59,26 @@ function LogStreamView(): React.JSX.Element {
   return (
     <div className="relative flex h-full flex-col p-6">
       <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-neutral-100">Logs</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-semibold text-neutral-100">Logs</h1>
+          <div className="flex items-center rounded-md border border-neutral-700 p-0.5">
+            {BYTE_ENCODING_MODES.map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                aria-pressed={mode === m}
+                className={`rounded px-2 py-0.5 text-[11px] font-medium uppercase ${
+                  mode === m
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
         <span className="text-xs text-neutral-500">{entries.length} lines</span>
       </div>
 
@@ -89,7 +120,12 @@ function LogStreamView(): React.JSX.Element {
                     transform: `translateY(${virtualRow.start}px)`
                   }}
                 >
-                  <LogRow entry={entries[virtualRow.index]} onSelect={setSelected} highlight={compiledSearch} />
+                  <LogRow
+                    entry={entries[virtualRow.index]}
+                    mode={mode}
+                    onSelect={setSelected}
+                    highlight={compiledSearch}
+                  />
                 </div>
               ))}
             </div>
@@ -106,7 +142,7 @@ function LogStreamView(): React.JSX.Element {
         </button>
       )}
 
-      <LogDetailPanel entry={selected} onClose={() => setSelected(null)} />
+      <LogDetailPanel entry={selected} mode={mode} onClose={() => setSelected(null)} />
 
       <ClearLogsDialog
         open={clearDialogOpen}
