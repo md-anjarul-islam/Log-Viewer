@@ -17,7 +17,9 @@ function resolveDelimiter(delimiterHex: string | undefined): Buffer {
   return Buffer.from(DEFAULT_DELIMITER_HEX, 'hex')
 }
 
-// Emits 'line' (string) and 'status-change' (SerialStatus).
+// Emits 'line' (a hex string of the raw bytes received, e.g. "48656c6c6f" —
+// hardware payloads aren't assumed to be text, so bytes are never decoded
+// as UTF-8 here) and 'status-change' (SerialStatus).
 // Owns a single serial connection at a time. A close/error from the port
 // itself never retries on its own; it only starts polling for the
 // remembered device to reappear when auto-reconnect is enabled AND the
@@ -64,7 +66,9 @@ export class SerialManager extends EventEmitter {
 
         this.port = port
         this.settings.setLastDevice({ path, baudRate, delimiterHex })
-        const parser = port.pipe(new ReadlineParser({ delimiter: resolveDelimiter(delimiterHex) }))
+        const parser = port.pipe(
+          new ReadlineParser({ delimiter: resolveDelimiter(delimiterHex), encoding: 'hex' })
+        )
         parser.on('data', (line: string) => this.emit('line', line))
 
         port.on('close', () => {
