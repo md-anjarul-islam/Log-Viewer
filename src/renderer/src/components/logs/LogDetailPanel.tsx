@@ -1,11 +1,13 @@
 import type { LogEntry } from '@shared/types'
+import { encodeForDisplay, type ByteEncodingMode } from '../../lib/byteEncoding'
 
 interface LogDetailPanelProps {
   entry: LogEntry | null
+  mode: ByteEncodingMode
   onClose: () => void
 }
 
-function LogDetailPanel({ entry, onClose }: LogDetailPanelProps): React.JSX.Element | null {
+function LogDetailPanel({ entry, mode, onClose }: LogDetailPanelProps): React.JSX.Element | null {
   if (!entry) return null
 
   return (
@@ -23,7 +25,7 @@ function LogDetailPanel({ entry, onClose }: LogDetailPanelProps): React.JSX.Elem
       </div>
 
       <div className="flex-1 overflow-auto p-4 font-mono text-xs">
-        <pre className="whitespace-pre-wrap text-neutral-300">{entry.raw}</pre>
+        <pre className="whitespace-pre-wrap text-neutral-300">{encodeForDisplay(entry.raw, mode)}</pre>
       </div>
     </div>
   )

@@ -1,9 +1,11 @@
 import { memo } from 'react'
 import type { LogEntry } from '@shared/types'
 import { highlightSegments, type CompiledSearch } from '../../lib/logSearch'
+import { encodeForDisplay, type ByteEncodingMode } from '../../lib/byteEncoding'
 
 interface LogRowProps {
   entry: LogEntry
+  mode: ByteEncodingMode
   measureRef?: (el: HTMLDivElement | null) => void
   onSelect?: (entry: LogEntry) => void
   highlight?: CompiledSearch
@@ -15,9 +17,10 @@ const SOURCE_STYLES: Record<LogEntry['source'], string> = {
   unsolicited: 'bg-neutral-800 text-neutral-500'
 }
 
-function LogRowImpl({ entry, measureRef, onSelect, highlight }: LogRowProps): React.JSX.Element {
+function LogRowImpl({ entry, mode, measureRef, onSelect, highlight }: LogRowProps): React.JSX.Element {
   const time = new Date(entry.timestamp).toLocaleTimeString()
-  const segments = highlight?.regex ? highlightSegments(entry.raw, highlight) : null
+  const displayText = encodeForDisplay(entry.raw, mode)
+  const segments = highlight?.regex ? highlightSegments(displayText, highlight) : null
 
   return (
     <div
@@ -41,7 +44,7 @@ function LogRowImpl({ entry, measureRef, onSelect, highlight }: LogRowProps): Re
                   <span key={i}>{seg.text}</span>
                 )
               )
-            : entry.raw}
+            : displayText}
         </span>
       </div>
     </div>
