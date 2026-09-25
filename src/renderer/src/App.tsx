@@ -4,9 +4,12 @@ import TopBar from './components/layout/TopBar'
 import CommandsView from './components/commands/CommandsView'
 import CategoriesView from './components/categories/CategoriesView'
 import LogStreamView from './components/logs/LogStreamView'
+import DebugLogStreamView from './components/logs/DebugLogStreamView'
 import { useCommands } from './hooks/useCommands'
 import { useCategories } from './hooks/useCategories'
 import { useLogStream } from './hooks/useLogStream'
+import { useDebugSerialStatus } from './hooks/useDebugSerialStatus'
+import { useDebugLogStream } from './hooks/useDebugLogStream'
 
 function App(): React.JSX.Element {
   const [view, setView] = useState<View>('commands')
@@ -18,6 +21,8 @@ function App(): React.JSX.Element {
   useCommands()
   useCategories()
   useLogStream()
+  useDebugSerialStatus()
+  useDebugLogStream()
 
   return (
     <div className="flex h-screen w-screen bg-neutral-950 text-neutral-100">
@@ -28,6 +33,7 @@ function App(): React.JSX.Element {
           {view === 'commands' && <CommandsView />}
           {view === 'categories' && <CategoriesView />}
           {view === 'logs' && <LogStreamView />}
+          {view === 'debugLogs' && <DebugLogStreamView />}
         </main>
       </div>
     </div>

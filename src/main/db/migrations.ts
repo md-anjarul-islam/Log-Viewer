@@ -39,6 +39,14 @@ const MIGRATIONS: string[] = [
   );
   ALTER TABLE commands ADD COLUMN category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL;
   CREATE INDEX idx_commands_category_id ON commands(category_id);
+  `,
+  `
+  CREATE TABLE debug_logs (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,
+    raw       TEXT NOT NULL
+  );
+  CREATE INDEX idx_debug_logs_timestamp ON debug_logs(timestamp);
   `
 ]
 
