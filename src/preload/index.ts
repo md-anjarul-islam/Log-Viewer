@@ -9,6 +9,9 @@ import type {
   CommandExportResult,
   CommandImportResult,
   CommandInput,
+  DebugLogEntry,
+  DebugLogQueryFilter,
+  DebugLogQueryResult,
   LogEntry,
   LogExportFilter,
   LogExportResult,
@@ -73,6 +76,28 @@ const api = {
       ipcRenderer.invoke(IPC.SERIAL_SET_AUTO_RECONNECT, enabled)
   },
 
+  // Optional secondary connection to the same hardware (e.g. a debug UART).
+  // Port enumeration is shared with `serial.listPorts` above.
+  serialDebug: {
+    connect: (
+      path: string,
+      baudRate: number,
+      delimiterHex: string
+    ): Promise<{ ok: true } | { ok: false; error: string }> =>
+      ipcRenderer.invoke(IPC.SERIAL_DEBUG_CONNECT, path, baudRate, delimiterHex),
+    disconnect: (): Promise<void> => ipcRenderer.invoke(IPC.SERIAL_DEBUG_DISCONNECT),
+    getStatus: (): Promise<SerialStatus> => ipcRenderer.invoke(IPC.SERIAL_DEBUG_GET_STATUS),
+    onStatus: (callback: (status: SerialStatus) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, status: SerialStatus): void => callback(status)
+      ipcRenderer.on(IPC.SERIAL_DEBUG_STATUS, listener)
+      return () => ipcRenderer.removeListener(IPC.SERIAL_DEBUG_STATUS, listener)
+    },
+    getAutoReconnect: (): Promise<AutoReconnectSettings> =>
+      ipcRenderer.invoke(IPC.SERIAL_DEBUG_GET_AUTO_RECONNECT),
+    setAutoReconnect: (enabled: boolean): Promise<AutoReconnectSettings> =>
+      ipcRenderer.invoke(IPC.SERIAL_DEBUG_SET_AUTO_RECONNECT, enabled)
+  },
+
   logs: {
     onEntry: (callback: (entry: LogEntry) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, entry: LogEntry): void => callback(entry)
@@ -88,6 +113,24 @@ const api = {
       const listener = (_event: Electron.IpcRendererEvent, payload: LogsClearedEvent): void => callback(payload)
       ipcRenderer.on(IPC.LOGS_CLEARED, listener)
       return () => ipcRenderer.removeListener(IPC.LOGS_CLEARED, listener)
+    }
+  },
+
+  debugLogs: {
+    onEntry: (callback: (entry: DebugLogEntry) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, entry: DebugLogEntry): void => callback(entry)
+      ipcRenderer.on(IPC.DEBUG_LOGS_STREAM, listener)
+      return () => ipcRenderer.removeListener(IPC.DEBUG_LOGS_STREAM, listener)
+    },
+    query: (filter: DebugLogQueryFilter): Promise<DebugLogQueryResult> =>
+      ipcRenderer.invoke(IPC.DEBUG_LOGS_QUERY, filter),
+    clearAll: (): Promise<ClearLogsResult> => ipcRenderer.invoke(IPC.DEBUG_LOGS_CLEAR_ALL),
+    clearOlderThan: (days: number): Promise<ClearLogsResult> =>
+      ipcRenderer.invoke(IPC.DEBUG_LOGS_CLEAR_OLDER_THAN, days),
+    onCleared: (callback: (event: LogsClearedEvent) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: LogsClearedEvent): void => callback(payload)
+      ipcRenderer.on(IPC.DEBUG_LOGS_CLEARED, listener)
+      return () => ipcRenderer.removeListener(IPC.DEBUG_LOGS_CLEARED, listener)
     }
   }
 }

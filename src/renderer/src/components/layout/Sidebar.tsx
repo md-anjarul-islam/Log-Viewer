@@ -1,4 +1,4 @@
-export type View = 'logs' | 'commands' | 'categories'
+export type View = 'logs' | 'debugLogs' | 'commands' | 'categories'
 
 interface SidebarProps {
   active: View
@@ -7,6 +7,7 @@ interface SidebarProps {
 
 const ITEMS: { id: View; label: string }[] = [
   { id: 'logs', label: 'Logs' },
+  { id: 'debugLogs', label: 'Debug Logs' },
   { id: 'commands', label: 'Commands' },
   { id: 'categories', label: 'Categories' }
 ]

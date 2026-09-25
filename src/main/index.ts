@@ -5,16 +5,19 @@ import { runMigrations } from './db/migrations'
 import { CommandsRepo } from './db/commandsRepo'
 import { CategoriesRepo } from './db/categoriesRepo'
 import { LogsRepo } from './db/logsRepo'
+import { DebugLogsRepo } from './db/debugLogsRepo'
 import { SerialManager } from './serial/SerialManager'
 import { SettingsStore } from './settings/SettingsStore'
 import { Scheduler } from './scheduler/Scheduler'
 import { LogIngestor } from './logging/LogIngestor'
+import { DebugLogIngestor } from './logging/DebugLogIngestor'
 import { registerIpcHandlers } from './ipc'
 
 let mainWindow: BrowserWindow | null = null
 let logIngestor: LogIngestor | null = null
 const settingsStore = new SettingsStore()
-const serialManager = new SerialManager(settingsStore)
+const serialManager = new SerialManager(settingsStore, 'main')
+const debugSerialManager = new SerialManager(settingsStore, 'debug')
 const scheduler = new Scheduler((command) => {
   logIngestor?.beginRun(command.id, 'scheduled')
   serialManager.write(command.commandString).catch((err) => {
@@ -58,7 +61,9 @@ app.whenReady().then(() => {
   const commandsRepo = new CommandsRepo(db)
   const categoriesRepo = new CategoriesRepo(db)
   const logsRepo = new LogsRepo(db)
+  const debugLogsRepo = new DebugLogsRepo(db)
   logIngestor = new LogIngestor(serialManager, logsRepo, () => mainWindow)
+  new DebugLogIngestor(debugSerialManager, debugLogsRepo, () => mainWindow)
 
   for (const command of commandsRepo.list()) {
     scheduler.syncWithCommand(command)
@@ -69,13 +74,16 @@ app.whenReady().then(() => {
     commandsRepo,
     categoriesRepo,
     logsRepo,
+    debugLogsRepo,
     serialManager,
+    debugSerialManager,
     scheduler,
     logIngestor,
     getWindow: () => mainWindow
   })
 
   serialManager.tryStartReconnectIfEligible()
+  debugSerialManager.tryStartReconnectIfEligible()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow()
@@ -85,6 +93,7 @@ app.whenReady().then(() => {
 app.on('before-quit', () => {
   scheduler.stopAll()
   serialManager.disconnect()
+  debugSerialManager.disconnect()
 })
 
 app.on('window-all-closed', () => {

@@ -24,10 +24,27 @@ export const IPC = {
   SERIAL_GET_AUTO_RECONNECT: 'serial:getAutoReconnect',
   SERIAL_SET_AUTO_RECONNECT: 'serial:setAutoReconnect',
 
+  // Debug connection: a second, independent serial link to the same
+  // hardware (e.g. a dedicated debug/logging UART). Port enumeration is
+  // shared with the main connection (SERIAL_LIST_PORTS) since it's a
+  // property of the host, not of either connection.
+  SERIAL_DEBUG_CONNECT: 'serial:debug:connect',
+  SERIAL_DEBUG_DISCONNECT: 'serial:debug:disconnect',
+  SERIAL_DEBUG_STATUS: 'serial:debug:status',
+  SERIAL_DEBUG_GET_STATUS: 'serial:debug:getStatus',
+  SERIAL_DEBUG_GET_AUTO_RECONNECT: 'serial:debug:getAutoReconnect',
+  SERIAL_DEBUG_SET_AUTO_RECONNECT: 'serial:debug:setAutoReconnect',
+
   LOGS_STREAM: 'logs:stream',
   LOGS_QUERY: 'logs:query',
   LOGS_EXPORT: 'logs:export',
   LOGS_CLEAR_ALL: 'logs:clearAll',
   LOGS_CLEAR_OLDER_THAN: 'logs:clearOlderThan',
-  LOGS_CLEARED: 'logs:cleared'
+  LOGS_CLEARED: 'logs:cleared',
+
+  DEBUG_LOGS_STREAM: 'debugLogs:stream',
+  DEBUG_LOGS_QUERY: 'debugLogs:query',
+  DEBUG_LOGS_CLEAR_ALL: 'debugLogs:clearAll',
+  DEBUG_LOGS_CLEAR_OLDER_THAN: 'debugLogs:clearOlderThan',
+  DEBUG_LOGS_CLEARED: 'debugLogs:cleared'
 } as const

@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import { SerialPort } from 'serialport'
 import { ReadlineParser } from '@serialport/parser-readline'
 import type { AutoReconnectSettings, SerialPortInfo, SerialStatus } from '@shared/types'
-import type { SettingsStore } from '../settings/SettingsStore'
+import type { SerialChannel, SettingsStore } from '../settings/SettingsStore'
 
 const RECONNECT_POLL_INTERVAL_MS = 3000
 
@@ -31,7 +31,10 @@ export class SerialManager extends EventEmitter {
   private reconnecting = false
   private reconnectTimer: ReturnType<typeof setInterval> | null = null
 
-  constructor(private settings: SettingsStore) {
+  constructor(
+    private settings: SettingsStore,
+    private channel: SerialChannel = 'main'
+  ) {
     super()
   }
 
@@ -65,7 +68,7 @@ export class SerialManager extends EventEmitter {
         }
 
         this.port = port
-        this.settings.setLastDevice({ path, baudRate, delimiterHex })
+        this.settings.setLastDevice(this.channel, { path, baudRate, delimiterHex })
         const parser = port.pipe(
           new ReadlineParser({ delimiter: resolveDelimiter(delimiterHex), encoding: 'hex' })
         )
@@ -74,7 +77,7 @@ export class SerialManager extends EventEmitter {
         port.on('close', () => {
           this.port = null
           this.emit('status-change', this.buildStatus(false))
-          if (!this.manualDisconnect && this.settings.getSerialSettings().autoReconnect) {
+          if (!this.manualDisconnect && this.settings.getSerialSettings(this.channel).autoReconnect) {
             this.startReconnectLoop(path, baudRate, delimiterHex)
           }
         })
@@ -124,12 +127,12 @@ export class SerialManager extends EventEmitter {
   }
 
   getAutoReconnect(): AutoReconnectSettings {
-    const s = this.settings.getSerialSettings()
+    const s = this.settings.getSerialSettings(this.channel)
     return { enabled: s.autoReconnect, lastDevice: s.lastDevice }
   }
 
   setAutoReconnect(enabled: boolean): AutoReconnectSettings {
-    this.settings.setAutoReconnect(enabled)
+    this.settings.setAutoReconnect(this.channel, enabled)
     if (!enabled) {
       this.stopReconnectLoop()
     } else {
@@ -142,7 +145,7 @@ export class SerialManager extends EventEmitter {
   // without needing a live disconnect event to trigger the loop first.
   tryStartReconnectIfEligible(): void {
     if (this.port?.isOpen || this.reconnecting) return
-    const { autoReconnect, lastDevice } = this.settings.getSerialSettings()
+    const { autoReconnect, lastDevice } = this.settings.getSerialSettings(this.channel)
     if (!autoReconnect || !lastDevice) return
     this.manualDisconnect = false
     this.startReconnectLoop(lastDevice.path, lastDevice.baudRate, lastDevice.delimiterHex)
