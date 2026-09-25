@@ -118,3 +118,24 @@ export interface ClearLogsResult {
 export interface LogsClearedEvent {
   olderThanIso: string | null
 }
+
+// Debug logs are a second, independent stream: raw bytes read off an
+// optional secondary serial connection to the same hardware (e.g. a
+// dedicated debug/logging UART), unrelated to command runs.
+export interface DebugLogEntry {
+  id: number
+  timestamp: string
+  raw: string
+}
+
+export interface DebugLogQueryFilter {
+  from?: string
+  to?: string
+  cursor?: string
+  limit: number
+}
+
+export interface DebugLogQueryResult {
+  entries: DebugLogEntry[]
+  nextCursor: string | null
+}
