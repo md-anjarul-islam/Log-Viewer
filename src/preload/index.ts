@@ -12,6 +12,7 @@ import type {
   DebugLogEntry,
   DebugLogQueryFilter,
   DebugLogQueryResult,
+  DebugLogWindowQuery,
   LogEntry,
   LogExportFilter,
   LogExportResult,
@@ -124,6 +125,8 @@ const api = {
     },
     query: (filter: DebugLogQueryFilter): Promise<DebugLogQueryResult> =>
       ipcRenderer.invoke(IPC.DEBUG_LOGS_QUERY, filter),
+    queryAroundTimestamp: (query: DebugLogWindowQuery): Promise<DebugLogEntry[]> =>
+      ipcRenderer.invoke(IPC.DEBUG_LOGS_QUERY_AROUND, query),
     clearAll: (): Promise<ClearLogsResult> => ipcRenderer.invoke(IPC.DEBUG_LOGS_CLEAR_ALL),
     clearOlderThan: (days: number): Promise<ClearLogsResult> =>
       ipcRenderer.invoke(IPC.DEBUG_LOGS_CLEAR_OLDER_THAN, days),

@@ -139,3 +139,11 @@ export interface DebugLogQueryResult {
   entries: DebugLogEntry[]
   nextCursor: string | null
 }
+
+// For correlating a serial/command log entry with nearby debug-connection
+// output: "everything within windowMs of centerTimestamp on either side".
+// Unbounded by cursor pagination since the window is expected to be small.
+export interface DebugLogWindowQuery {
+  centerTimestamp: string
+  windowMs: number
+}

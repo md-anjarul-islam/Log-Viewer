@@ -10,9 +10,22 @@ import { useCategories } from './hooks/useCategories'
 import { useLogStream } from './hooks/useLogStream'
 import { useDebugSerialStatus } from './hooks/useDebugSerialStatus'
 import { useDebugLogStream } from './hooks/useDebugLogStream'
+import { useDebugLogsStore } from './store/debugLogsStore'
 
 function App(): React.JSX.Element {
   const [view, setView] = useState<View>('commands')
+
+  // Sets the debug-log view's filter to a window around the given serial
+  // log's timestamp and switches to it — the "jump to debug view" action
+  // from LogDetailPanel.
+  function jumpToDebugLogs(centerTimestamp: string, windowMs: number): void {
+    const centerMs = new Date(centerTimestamp).getTime()
+    useDebugLogsStore.getState().setFilter({
+      from: new Date(centerMs - windowMs).toISOString(),
+      to: new Date(centerMs + windowMs).toISOString()
+    })
+    setView('debugLogs')
+  }
 
   // Mounted here (not inside CommandsView/LogStreamView) so these IPC
   // subscriptions stay alive regardless of which tab is showing — otherwise
@@ -32,7 +45,7 @@ function App(): React.JSX.Element {
         <main className="flex-1 overflow-hidden">
           {view === 'commands' && <CommandsView />}
           {view === 'categories' && <CategoriesView />}
-          {view === 'logs' && <LogStreamView />}
+          {view === 'logs' && <LogStreamView onJumpToDebugLogs={jumpToDebugLogs} />}
           {view === 'debugLogs' && <DebugLogStreamView />}
         </main>
       </div>
