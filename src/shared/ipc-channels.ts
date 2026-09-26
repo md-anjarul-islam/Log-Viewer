@@ -44,6 +44,7 @@ export const IPC = {
 
   DEBUG_LOGS_STREAM: 'debugLogs:stream',
   DEBUG_LOGS_QUERY: 'debugLogs:query',
+  DEBUG_LOGS_QUERY_AROUND: 'debugLogs:queryAroundTimestamp',
   DEBUG_LOGS_CLEAR_ALL: 'debugLogs:clearAll',
   DEBUG_LOGS_CLEAR_OLDER_THAN: 'debugLogs:clearOlderThan',
   DEBUG_LOGS_CLEARED: 'debugLogs:cleared'
