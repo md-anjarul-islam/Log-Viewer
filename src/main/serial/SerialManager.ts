@@ -2,9 +2,15 @@ import { EventEmitter } from 'events'
 import { SerialPort } from 'serialport'
 import { ReadlineParser } from '@serialport/parser-readline'
 import type { AutoReconnectSettings, SerialPortInfo, SerialStatus } from '@shared/types'
-import type { SettingsStore } from '../settings/SettingsStore'
+import type { SerialChannel, SettingsStore } from '../settings/SettingsStore'
+import { SimulatedSerialPort } from './SimulatedSerialPort'
 
 const RECONNECT_POLL_INTERVAL_MS = 3000
+
+// Selecting this as the "port" connects to an in-process fake device
+// instead of real hardware — see SimulatedSerialPort. Always listed so it
+// works out of the box on any OS with no extra setup.
+export const SIMULATED_DEVICE_PATH = '__simulated__'
 
 // Falls back to EOT (0x04) — the delimiter our supported hardware actually
 // frames records with — whenever a caller omits it or supplies invalid hex.
@@ -17,6 +23,8 @@ function resolveDelimiter(delimiterHex: string | undefined): Buffer {
   return Buffer.from(DEFAULT_DELIMITER_HEX, 'hex')
 }
 
+type SerialPortLike = SerialPort | SimulatedSerialPort
+
 // Emits 'line' (a hex string of the raw bytes received, e.g. "48656c6c6f" —
 // hardware payloads aren't assumed to be text, so bytes are never decoded
 // as UTF-8 here) and 'status-change' (SerialStatus).
@@ -26,23 +34,29 @@ function resolveDelimiter(delimiterHex: string | undefined): Buffer {
 // disconnect wasn't user-initiated, so silently retrying against
 // half-connected hardware after an explicit user disconnect never happens.
 export class SerialManager extends EventEmitter {
-  private port: SerialPort | null = null
+  private port: SerialPortLike | null = null
   private manualDisconnect = false
   private reconnecting = false
   private reconnectTimer: ReturnType<typeof setInterval> | null = null
 
-  constructor(private settings: SettingsStore) {
+  constructor(
+    private settings: SettingsStore,
+    private channel: SerialChannel = 'main'
+  ) {
     super()
   }
 
   async listPorts(): Promise<SerialPortInfo[]> {
     const ports = await SerialPort.list()
-    return ports.map((p) => ({
-      path: p.path,
-      manufacturer: p.manufacturer,
-      vendorId: p.vendorId,
-      productId: p.productId
-    }))
+    return [
+      ...ports.map((p) => ({
+        path: p.path,
+        manufacturer: p.manufacturer,
+        vendorId: p.vendorId,
+        productId: p.productId
+      })),
+      { path: SIMULATED_DEVICE_PATH, manufacturer: 'Log Viewer Simulator' },
+    ]
   }
 
   connect(path: string, baudRate: number, delimiterHex: string): Promise<void> {
@@ -56,7 +70,10 @@ export class SerialManager extends EventEmitter {
 
   private open(path: string, baudRate: number, delimiterHex: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      const port = new SerialPort({ path, baudRate, autoOpen: false })
+      const port: SerialPortLike =
+        path === SIMULATED_DEVICE_PATH
+          ? new SimulatedSerialPort({ path, delimiterHex })
+          : new SerialPort({ path, baudRate, autoOpen: false })
 
       port.open((err) => {
         if (err) {
@@ -65,7 +82,7 @@ export class SerialManager extends EventEmitter {
         }
 
         this.port = port
-        this.settings.setLastDevice({ path, baudRate, delimiterHex })
+        this.settings.setLastDevice(this.channel, { path, baudRate, delimiterHex })
         const parser = port.pipe(
           new ReadlineParser({ delimiter: resolveDelimiter(delimiterHex), encoding: 'hex' })
         )
@@ -74,7 +91,7 @@ export class SerialManager extends EventEmitter {
         port.on('close', () => {
           this.port = null
           this.emit('status-change', this.buildStatus(false))
-          if (!this.manualDisconnect && this.settings.getSerialSettings().autoReconnect) {
+          if (!this.manualDisconnect && this.settings.getSerialSettings(this.channel).autoReconnect) {
             this.startReconnectLoop(path, baudRate, delimiterHex)
           }
         })
@@ -124,12 +141,12 @@ export class SerialManager extends EventEmitter {
   }
 
   getAutoReconnect(): AutoReconnectSettings {
-    const s = this.settings.getSerialSettings()
+    const s = this.settings.getSerialSettings(this.channel)
     return { enabled: s.autoReconnect, lastDevice: s.lastDevice }
   }
 
   setAutoReconnect(enabled: boolean): AutoReconnectSettings {
-    this.settings.setAutoReconnect(enabled)
+    this.settings.setAutoReconnect(this.channel, enabled)
     if (!enabled) {
       this.stopReconnectLoop()
     } else {
@@ -142,7 +159,7 @@ export class SerialManager extends EventEmitter {
   // without needing a live disconnect event to trigger the loop first.
   tryStartReconnectIfEligible(): void {
     if (this.port?.isOpen || this.reconnecting) return
-    const { autoReconnect, lastDevice } = this.settings.getSerialSettings()
+    const { autoReconnect, lastDevice } = this.settings.getSerialSettings(this.channel)
     if (!autoReconnect || !lastDevice) return
     this.manualDisconnect = false
     this.startReconnectLoop(lastDevice.path, lastDevice.baudRate, lastDevice.delimiterHex)
