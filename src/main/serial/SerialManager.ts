@@ -14,6 +14,10 @@ export const SIMULATED_DEVICE_PATH = '__simulated__'
 
 // Falls back to EOT (0x04) — the delimiter our supported hardware actually
 // frames records with — whenever a caller omits it or supplies invalid hex.
+// The delimiter byte can also legitimately appear inside a payload (not just
+// as a frame terminator), so the parser is configured to keep it in the
+// emitted line rather than strip it — otherwise a mid-payload delimiter byte
+// looks like silently dropped data once the response is split across rows.
 const DEFAULT_DELIMITER_HEX = '04'
 
 function resolveDelimiter(delimiterHex: string | undefined): Buffer {
@@ -84,7 +88,11 @@ export class SerialManager extends EventEmitter {
         this.port = port
         this.settings.setLastDevice(this.channel, { path, baudRate, delimiterHex })
         const parser = port.pipe(
-          new ReadlineParser({ delimiter: resolveDelimiter(delimiterHex), encoding: 'hex' })
+          new ReadlineParser({
+            delimiter: resolveDelimiter(delimiterHex),
+            encoding: 'hex',
+            includeDelimiter: true
+          })
         )
         parser.on('data', (line: string) => this.emit('line', line))
 
