@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CORRELATION_WINDOW_MS_MAX, CORRELATION_WINDOW_MS_MIN } from '@shared/constants'
 import { useSerialStore } from '../../store/serialStore'
 import { useDebugSerialStore } from '../../store/debugSerialStore'
 import { useSerialConnectionForm } from '../../hooks/useSerialConnectionForm'
@@ -40,45 +41,83 @@ function AutoReconnectToggle({ checked, onChange }: AutoReconnectToggleProps): R
   )
 }
 
+const CORRELATION_WINDOW_HINT = `Whole number of milliseconds, ${CORRELATION_WINDOW_MS_MIN}–${CORRELATION_WINDOW_MS_MAX}`
+
+function validateCorrelationWindowInput(raw: string): string | null {
+  const trimmed = raw.trim()
+  if (trimmed === '' || !Number.isFinite(Number(trimmed)) || !Number.isInteger(Number(trimmed))) {
+    return `Enter a whole number of milliseconds (${CORRELATION_WINDOW_MS_MIN}–${CORRELATION_WINDOW_MS_MAX}).`
+  }
+  const parsed = Number(trimmed)
+  if (parsed < CORRELATION_WINDOW_MS_MIN || parsed > CORRELATION_WINDOW_MS_MAX) {
+    return `Value must be between ${CORRELATION_WINDOW_MS_MIN} and ${CORRELATION_WINDOW_MS_MAX} ms.`
+  }
+  return null
+}
+
 function CorrelationWindowField({
   valueMs,
-  onCommit
+  onCommit,
+  onErrorChange
 }: {
   valueMs: number
-  onCommit: (ms: number) => void
+  onCommit: (ms: number) => Promise<{ ok: true } | { ok: false; error: string }>
+  onErrorChange: (hasError: boolean) => void
 }): React.JSX.Element {
   const [text, setText] = useState(String(valueMs))
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => setText(String(valueMs)), [valueMs])
+  useEffect(() => {
+    setText(String(valueMs))
+    setError(null)
+  }, [valueMs])
 
-  const commit = (): void => {
-    const parsed = Number(text)
-    if (Number.isFinite(parsed) && parsed > 0) {
-      onCommit(Math.round(parsed))
-    } else {
-      setText(String(valueMs))
+  // Single source of truth for whether the field is currently invalid, kept
+  // in sync with the parent (which gates the Connect button on it) whenever
+  // `error` changes for any reason — set on a failed commit, or cleared as
+  // soon as the user edits the text.
+  useEffect(() => {
+    onErrorChange(error !== null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error])
+
+  const commit = async (): Promise<void> => {
+    const validationError = validateCorrelationWindowInput(text)
+    if (validationError) {
+      setError(validationError)
+      return
     }
+    const result = await onCommit(Number(text))
+    setError(result.ok ? null : result.error)
   }
 
   return (
-    <label
-      className="flex items-center gap-1.5 text-xs text-neutral-400"
-      title="How long an incoming line can still be attributed to the command that triggered it"
-    >
-      <span>Correlation window (ms)</span>
-      <input
-        type="number"
-        min={100}
-        max={60000}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') e.currentTarget.blur()
-        }}
-        className="w-20 rounded border border-neutral-700 bg-neutral-800 px-1.5 py-0.5 text-neutral-200"
-      />
-    </label>
+    <div className="flex flex-col gap-0.5">
+      <label className="flex items-center gap-1.5 text-xs text-neutral-400" title={CORRELATION_WINDOW_HINT}>
+        <span>Correlation window (ms)</span>
+        <input
+          type="number"
+          min={CORRELATION_WINDOW_MS_MIN}
+          max={CORRELATION_WINDOW_MS_MAX}
+          step={1}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value)
+            if (error) setError(null)
+          }}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur()
+          }}
+          aria-invalid={error != null}
+          className={`w-24 rounded border bg-neutral-800 px-1.5 py-0.5 text-neutral-200 ${
+            error ? 'border-red-500' : 'border-neutral-700'
+          }`}
+        />
+      </label>
+      <span className="text-[11px] text-neutral-500">{CORRELATION_WINDOW_HINT}</span>
+      {error && <span className="text-[11px] text-red-400">{error}</span>}
+    </div>
   )
 }
 
@@ -107,6 +146,7 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
   const mainForm = useSerialConnectionForm()
   const debugForm = useSerialConnectionForm()
   const [debugEnabled, setDebugEnabled] = useState(false)
+  const [correlationWindowHasError, setCorrelationWindowHasError] = useState(false)
 
   useEffect(() => {
     if (open) refreshPorts()
@@ -164,7 +204,11 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
             <div className="mt-3 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <AutoReconnectToggle checked={autoReconnect} onChange={setAutoReconnect} />
-                <CorrelationWindowField valueMs={correlationWindowMs} onCommit={setCorrelationWindowMs} />
+                <CorrelationWindowField
+                  valueMs={correlationWindowMs}
+                  onCommit={setCorrelationWindowMs}
+                  onErrorChange={setCorrelationWindowHasError}
+                />
               </div>
               {status.connected || status.reconnecting ? (
                 <button
@@ -176,7 +220,9 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
               ) : (
                 <button
                   onClick={handleConnectMain}
-                  disabled={!mainForm.selectedPath || connecting || !mainForm.delimiterValid}
+                  disabled={
+                    !mainForm.selectedPath || connecting || !mainForm.delimiterValid || correlationWindowHasError
+                  }
                   className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
                   {connecting ? 'Connecting…' : 'Connect'}
