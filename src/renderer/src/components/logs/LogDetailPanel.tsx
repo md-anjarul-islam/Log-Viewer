@@ -96,7 +96,7 @@ function LogDetailPanel({ entry, mode, onClose, onJumpToDebugLogs }: LogDetailPa
             {correlated.map((d) => (
               <li key={d.id} className="rounded bg-neutral-900 px-2 py-1">
                 <div className="text-[10px] text-neutral-500">{new Date(d.timestamp).toLocaleTimeString()}</div>
-                <div className="whitespace-pre-wrap break-all text-neutral-300">{encodeForDisplay(d.raw, mode)}</div>
+                <div className="whitespace-pre-wrap break-all text-neutral-300">{d.raw}</div>
               </li>
             ))}
           </ul>

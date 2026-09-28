@@ -119,9 +119,11 @@ export interface LogsClearedEvent {
   olderThanIso: string | null
 }
 
-// Debug logs are a second, independent stream: raw bytes read off an
-// optional secondary serial connection to the same hardware (e.g. a
-// dedicated debug/logging UART), unrelated to command runs.
+// Debug logs are a second, independent stream: lines read off an optional
+// secondary serial connection to the same hardware (e.g. a dedicated
+// debug/logging UART), unrelated to command runs. Unlike LogEntry.raw, this
+// is already-decoded ASCII text, not a hex string — the debug UART is
+// assumed to always emit plain text, LF-delimited.
 export interface DebugLogEntry {
   id: number
   timestamp: string

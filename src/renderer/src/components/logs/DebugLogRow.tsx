@@ -1,19 +1,17 @@
 import { memo } from 'react'
 import type { DebugLogEntry } from '@shared/types'
 import { highlightSegments, type CompiledSearch } from '../../lib/logSearch'
-import { encodeForDisplay, type ByteEncodingMode } from '../../lib/byteEncoding'
 
 interface DebugLogRowProps {
   entry: DebugLogEntry
-  mode: ByteEncodingMode
   measureRef?: (el: HTMLDivElement | null) => void
   onSelect?: (entry: DebugLogEntry) => void
   highlight?: CompiledSearch
 }
 
-function DebugLogRowImpl({ entry, mode, measureRef, onSelect, highlight }: DebugLogRowProps): React.JSX.Element {
+function DebugLogRowImpl({ entry, measureRef, onSelect, highlight }: DebugLogRowProps): React.JSX.Element {
   const time = new Date(entry.timestamp).toLocaleTimeString()
-  const displayText = encodeForDisplay(entry.raw, mode)
+  const displayText = entry.raw
   const segments = highlight?.regex ? highlightSegments(displayText, highlight) : null
 
   return (
