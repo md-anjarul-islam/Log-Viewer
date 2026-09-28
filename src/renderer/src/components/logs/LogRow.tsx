@@ -6,6 +6,7 @@ import { encodeForDisplay, type ByteEncodingMode } from '../../lib/byteEncoding'
 interface LogRowProps {
   entry: LogEntry
   mode: ByteEncodingMode
+  commandName?: string
   measureRef?: (el: HTMLDivElement | null) => void
   onSelect?: (entry: LogEntry) => void
   highlight?: CompiledSearch
@@ -17,7 +18,7 @@ const SOURCE_STYLES: Record<LogEntry['source'], string> = {
   unsolicited: 'bg-neutral-800 text-neutral-500'
 }
 
-function LogRowImpl({ entry, mode, measureRef, onSelect, highlight }: LogRowProps): React.JSX.Element {
+function LogRowImpl({ entry, mode, commandName, measureRef, onSelect, highlight }: LogRowProps): React.JSX.Element {
   const time = new Date(entry.timestamp).toLocaleTimeString()
   const displayText = encodeForDisplay(entry.raw, mode)
   const segments = highlight?.regex ? highlightSegments(displayText, highlight) : null
@@ -33,6 +34,9 @@ function LogRowImpl({ entry, mode, measureRef, onSelect, highlight }: LogRowProp
         <span className={`shrink-0 rounded px-1 pt-0.5 text-[10px] uppercase ${SOURCE_STYLES[entry.source]}`}>
           {entry.source}
         </span>
+        {commandName && (
+          <span className="shrink-0 truncate pt-0.5 text-[11px] text-neutral-500">{commandName}</span>
+        )}
         <span className="whitespace-pre-wrap text-neutral-300">
           {segments
             ? segments.map((seg, i) =>
