@@ -74,7 +74,11 @@ const api = {
     getAutoReconnect: (): Promise<AutoReconnectSettings> =>
       ipcRenderer.invoke(IPC.SERIAL_GET_AUTO_RECONNECT),
     setAutoReconnect: (enabled: boolean): Promise<AutoReconnectSettings> =>
-      ipcRenderer.invoke(IPC.SERIAL_SET_AUTO_RECONNECT, enabled)
+      ipcRenderer.invoke(IPC.SERIAL_SET_AUTO_RECONNECT, enabled),
+    getCorrelationWindowMs: (): Promise<number> =>
+      ipcRenderer.invoke(IPC.SERIAL_GET_CORRELATION_WINDOW_MS),
+    setCorrelationWindowMs: (windowMs: number): Promise<number> =>
+      ipcRenderer.invoke(IPC.SERIAL_SET_CORRELATION_WINDOW_MS, windowMs)
   },
 
   // Optional secondary connection to the same hardware (e.g. a debug UART).

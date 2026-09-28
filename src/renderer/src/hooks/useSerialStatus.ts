@@ -5,6 +5,7 @@ export function useSerialStatus(): void {
   useEffect(() => {
     useSerialStore.getState().refreshPorts()
     useSerialStore.getState().loadAutoReconnect()
+    useSerialStore.getState().loadCorrelationWindowMs()
     window.api.serial.getStatus().then((status) => {
       useSerialStore.setState({ status })
     })

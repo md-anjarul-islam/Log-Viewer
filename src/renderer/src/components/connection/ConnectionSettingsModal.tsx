@@ -40,6 +40,48 @@ function AutoReconnectToggle({ checked, onChange }: AutoReconnectToggleProps): R
   )
 }
 
+function CorrelationWindowField({
+  valueMs,
+  onCommit
+}: {
+  valueMs: number
+  onCommit: (ms: number) => void
+}): React.JSX.Element {
+  const [text, setText] = useState(String(valueMs))
+
+  useEffect(() => setText(String(valueMs)), [valueMs])
+
+  const commit = (): void => {
+    const parsed = Number(text)
+    if (Number.isFinite(parsed) && parsed > 0) {
+      onCommit(Math.round(parsed))
+    } else {
+      setText(String(valueMs))
+    }
+  }
+
+  return (
+    <label
+      className="flex items-center gap-1.5 text-xs text-neutral-400"
+      title="How long an incoming line can still be attributed to the command that triggered it"
+    >
+      <span>Correlation window (ms)</span>
+      <input
+        type="number"
+        min={100}
+        max={60000}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+        }}
+        className="w-20 rounded border border-neutral-700 bg-neutral-800 px-1.5 py-0.5 text-neutral-200"
+      />
+    </label>
+  )
+}
+
 function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps): React.JSX.Element | null {
   const ports = useSerialStore((s) => s.ports)
   const loadingPorts = useSerialStore((s) => s.loadingPorts)
@@ -47,10 +89,12 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
   const connecting = useSerialStore((s) => s.connecting)
   const lastError = useSerialStore((s) => s.lastError)
   const autoReconnect = useSerialStore((s) => s.autoReconnect)
+  const correlationWindowMs = useSerialStore((s) => s.correlationWindowMs)
   const refreshPorts = useSerialStore((s) => s.refreshPorts)
   const connect = useSerialStore((s) => s.connect)
   const disconnect = useSerialStore((s) => s.disconnect)
   const setAutoReconnect = useSerialStore((s) => s.setAutoReconnect)
+  const setCorrelationWindowMs = useSerialStore((s) => s.setCorrelationWindowMs)
 
   const debugStatus = useDebugSerialStore((s) => s.status)
   const debugConnecting = useDebugSerialStore((s) => s.connecting)
@@ -118,7 +162,10 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
             )}
 
             <div className="mt-3 flex items-center justify-between">
-              <AutoReconnectToggle checked={autoReconnect} onChange={setAutoReconnect} />
+              <div className="flex items-center gap-4">
+                <AutoReconnectToggle checked={autoReconnect} onChange={setAutoReconnect} />
+                <CorrelationWindowField valueMs={correlationWindowMs} onCommit={setCorrelationWindowMs} />
+              </div>
               {status.connected || status.reconnecting ? (
                 <button
                   onClick={() => disconnect()}
