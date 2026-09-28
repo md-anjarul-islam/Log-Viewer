@@ -86,7 +86,11 @@ export class SerialManager extends EventEmitter {
     return new Promise((resolve, reject) => {
       const port: SerialPortLike =
         path === SIMULATED_DEVICE_PATH
-          ? new SimulatedSerialPort({ path, delimiterHex: isDebugChannel ? DEBUG_DELIMITER_HEX : delimiterHex })
+          ? new SimulatedSerialPort({
+              path,
+              delimiterHex: isDebugChannel ? DEBUG_DELIMITER_HEX : delimiterHex,
+              channel: this.channel
+            })
           : new SerialPort({ path, baudRate, autoOpen: false })
 
       port.open((err) => {
