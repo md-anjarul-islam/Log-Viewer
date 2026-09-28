@@ -11,6 +11,11 @@ export interface LastSerialDevice {
 export interface SerialSettings {
   autoReconnect: boolean
   lastDevice: LastSerialDevice | null
+  // How long an incoming line can still be attributed to the run that
+  // triggered it (see LogIngestor). Only meaningful for the 'main' channel,
+  // which is the command/response link LogIngestor watches, but lives here
+  // alongside the other per-channel connection settings.
+  correlationWindowMs: number
 }
 
 // 'main' is the primary command/response link; 'debug' is an optional,
@@ -24,9 +29,19 @@ interface StoredSettings {
   debug: SerialSettings
 }
 
+const DEFAULT_CORRELATION_WINDOW_MS = 2000
+export const MIN_CORRELATION_WINDOW_MS = 100
+export const MAX_CORRELATION_WINDOW_MS = 60000
+
 const DEFAULT_SERIAL_SETTINGS: SerialSettings = {
   autoReconnect: false,
-  lastDevice: null
+  lastDevice: null,
+  correlationWindowMs: DEFAULT_CORRELATION_WINDOW_MS
+}
+
+function clampCorrelationWindowMs(ms: number): number {
+  if (!Number.isFinite(ms)) return DEFAULT_CORRELATION_WINDOW_MS
+  return Math.min(MAX_CORRELATION_WINDOW_MS, Math.max(MIN_CORRELATION_WINDOW_MS, Math.round(ms)))
 }
 
 // Small JSON-file-backed store for app preferences that aren't really "data"
@@ -82,5 +97,16 @@ export class SettingsStore {
   setLastDevice(channel: SerialChannel, device: LastSerialDevice | null): void {
     this.ensureLoaded()[channel].lastDevice = device
     this.persist()
+  }
+
+  getCorrelationWindowMs(channel: SerialChannel): number {
+    return this.ensureLoaded()[channel].correlationWindowMs
+  }
+
+  setCorrelationWindowMs(channel: SerialChannel, windowMs: number): number {
+    const clamped = clampCorrelationWindowMs(windowMs)
+    this.ensureLoaded()[channel].correlationWindowMs = clamped
+    this.persist()
+    return clamped
   }
 }

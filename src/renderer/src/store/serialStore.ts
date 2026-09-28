@@ -9,11 +9,14 @@ interface SerialState {
   lastError: string | null
   autoReconnect: boolean
   lastDevice: LastSerialDevice | null
+  correlationWindowMs: number
   refreshPorts: () => Promise<void>
   connect: (path: string, baudRate: number, delimiterHex: string) => Promise<void>
   disconnect: () => Promise<void>
   loadAutoReconnect: () => Promise<void>
   setAutoReconnect: (enabled: boolean) => Promise<void>
+  loadCorrelationWindowMs: () => Promise<void>
+  setCorrelationWindowMs: (windowMs: number) => Promise<void>
 }
 
 export const useSerialStore = create<SerialState>((set) => ({
@@ -24,6 +27,7 @@ export const useSerialStore = create<SerialState>((set) => ({
   lastError: null,
   autoReconnect: false,
   lastDevice: null,
+  correlationWindowMs: 2000,
 
   refreshPorts: async () => {
     set({ loadingPorts: true })
@@ -49,5 +53,15 @@ export const useSerialStore = create<SerialState>((set) => ({
   setAutoReconnect: async (enabled) => {
     const result = await window.api.serial.setAutoReconnect(enabled)
     set({ autoReconnect: result.enabled, lastDevice: result.lastDevice })
+  },
+
+  loadCorrelationWindowMs: async () => {
+    const correlationWindowMs = await window.api.serial.getCorrelationWindowMs()
+    set({ correlationWindowMs })
+  },
+
+  setCorrelationWindowMs: async (windowMs) => {
+    const correlationWindowMs = await window.api.serial.setCorrelationWindowMs(windowMs)
+    set({ correlationWindowMs })
   }
 }))
