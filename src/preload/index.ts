@@ -77,7 +77,9 @@ const api = {
       ipcRenderer.invoke(IPC.SERIAL_SET_AUTO_RECONNECT, enabled),
     getCorrelationWindowMs: (): Promise<number> =>
       ipcRenderer.invoke(IPC.SERIAL_GET_CORRELATION_WINDOW_MS),
-    setCorrelationWindowMs: (windowMs: number): Promise<number> =>
+    setCorrelationWindowMs: (
+      windowMs: number
+    ): Promise<{ ok: true; windowMs: number } | { ok: false; error: string }> =>
       ipcRenderer.invoke(IPC.SERIAL_SET_CORRELATION_WINDOW_MS, windowMs)
   },
 
