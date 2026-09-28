@@ -57,10 +57,12 @@ function validateCorrelationWindowInput(raw: string): string | null {
 
 function CorrelationWindowField({
   valueMs,
-  onCommit
+  onCommit,
+  onErrorChange
 }: {
   valueMs: number
   onCommit: (ms: number) => Promise<{ ok: true } | { ok: false; error: string }>
+  onErrorChange: (hasError: boolean) => void
 }): React.JSX.Element {
   const [text, setText] = useState(String(valueMs))
   const [error, setError] = useState<string | null>(null)
@@ -69,6 +71,15 @@ function CorrelationWindowField({
     setText(String(valueMs))
     setError(null)
   }, [valueMs])
+
+  // Single source of truth for whether the field is currently invalid, kept
+  // in sync with the parent (which gates the Connect button on it) whenever
+  // `error` changes for any reason — set on a failed commit, or cleared as
+  // soon as the user edits the text.
+  useEffect(() => {
+    onErrorChange(error !== null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error])
 
   const commit = async (): Promise<void> => {
     const validationError = validateCorrelationWindowInput(text)
@@ -135,6 +146,7 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
   const mainForm = useSerialConnectionForm()
   const debugForm = useSerialConnectionForm()
   const [debugEnabled, setDebugEnabled] = useState(false)
+  const [correlationWindowHasError, setCorrelationWindowHasError] = useState(false)
 
   useEffect(() => {
     if (open) refreshPorts()
@@ -192,7 +204,11 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
             <div className="mt-3 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <AutoReconnectToggle checked={autoReconnect} onChange={setAutoReconnect} />
-                <CorrelationWindowField valueMs={correlationWindowMs} onCommit={setCorrelationWindowMs} />
+                <CorrelationWindowField
+                  valueMs={correlationWindowMs}
+                  onCommit={setCorrelationWindowMs}
+                  onErrorChange={setCorrelationWindowHasError}
+                />
               </div>
               {status.connected || status.reconnecting ? (
                 <button
@@ -204,7 +220,9 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
               ) : (
                 <button
                   onClick={handleConnectMain}
-                  disabled={!mainForm.selectedPath || connecting || !mainForm.delimiterValid}
+                  disabled={
+                    !mainForm.selectedPath || connecting || !mainForm.delimiterValid || correlationWindowHasError
+                  }
                   className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
                   {connecting ? 'Connecting…' : 'Connect'}
