@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { LogEntry } from '@shared/types'
+import { useCommandsStore } from '../../store/commandsStore'
 import { isFilterActive, useLogsStore } from '../../store/logsStore'
 import { compileSearch, isSearchActive, matchesSearch } from '../../lib/logSearch'
 import {
@@ -30,6 +31,9 @@ function LogStreamView({ onJumpToDebugLogs }: LogStreamViewProps): React.JSX.Ele
 
   const filtered = isFilterActive(filter)
   const baseEntries = filtered ? historicalResults : liveEntries
+
+  const commands = useCommandsStore((s) => s.commands)
+  const commandNameById = useMemo(() => new Map(commands.map((c) => [c.id, c.name])), [commands])
 
   // View-only, unpersisted: resets to hex on every app launch.
   const [mode, setMode] = useState<ByteEncodingMode>(DEFAULT_BYTE_ENCODING_MODE)
@@ -127,6 +131,11 @@ function LogStreamView({ onJumpToDebugLogs }: LogStreamViewProps): React.JSX.Ele
                   <LogRow
                     entry={entries[virtualRow.index]}
                     mode={mode}
+                    commandName={
+                      entries[virtualRow.index].commandId != null
+                        ? commandNameById.get(entries[virtualRow.index].commandId as number)
+                        : undefined
+                    }
                     onSelect={setSelected}
                     highlight={compiledSearch}
                   />
@@ -149,6 +158,7 @@ function LogStreamView({ onJumpToDebugLogs }: LogStreamViewProps): React.JSX.Ele
       <LogDetailPanel
         entry={selected}
         mode={mode}
+        commandName={selected?.commandId != null ? commandNameById.get(selected.commandId) : undefined}
         onClose={() => setSelected(null)}
         onJumpToDebugLogs={onJumpToDebugLogs}
       />

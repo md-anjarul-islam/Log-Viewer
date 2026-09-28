@@ -27,6 +27,8 @@ function LogFilterBar({ onOpenClear }: LogFilterBarProps): React.JSX.Element {
   const clearFilter = useLogsStore((s) => s.clearFilter)
   const search = useLogsStore((s) => s.search)
   const setSearch = useLogsStore((s) => s.setSearch)
+  const reload = useLogsStore((s) => s.reload)
+  const reloading = useLogsStore((s) => s.reloading)
   const active = isFilterActive(filter) || isSearchActive(search)
 
   const compiledSearch = useMemo(
@@ -144,6 +146,15 @@ function LogFilterBar({ onOpenClear }: LogFilterBarProps): React.JSX.Element {
 
       <div className="ml-auto flex items-center gap-3">
         {exportStatus && <span className="text-xs text-neutral-500">{exportStatus}</span>}
+        <button
+          onClick={reload}
+          disabled={reloading}
+          title="Reload logs"
+          aria-label="Reload logs"
+          className="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-600 hover:text-neutral-100 disabled:opacity-50"
+        >
+          {reloading ? 'Reloading…' : '⟳ Reload'}
+        </button>
         <button
           onClick={handleExport}
           disabled={exporting}

@@ -34,6 +34,13 @@ interface LogsState {
   clearFilter: () => void
   runQuery: (loadMore?: boolean) => Promise<void>
 
+  // Re-fetches the currently displayed page from the DB: re-runs the
+  // filtered query from scratch when a filter is active, otherwise
+  // refreshes the live tail with the latest rows (e.g. entries logged
+  // before this window was open, which never arrive as stream events).
+  reloading: boolean
+  reload: () => Promise<void>
+
   // Text/regex search — applied client-side on top of whatever is currently
   // loaded (live tail or historical results), so it never touches the DB.
   search: SearchState
@@ -85,6 +92,23 @@ export const useLogsStore = create<LogsState>((set, get) => ({
       historicalCursor: result.nextCursor,
       historicalLoading: false
     })
+  },
+
+  reloading: false,
+  reload: async () => {
+    set({ reloading: true })
+    try {
+      const { filter } = get()
+      if (isFilterActive(filter)) {
+        set({ historicalResults: [], historicalCursor: null })
+        await get().runQuery()
+      } else {
+        const result = await window.api.logs.query({ limit: PAGE_SIZE })
+        set({ entries: result.entries })
+      }
+    } finally {
+      set({ reloading: false })
+    }
   },
 
   search: DEFAULT_SEARCH,

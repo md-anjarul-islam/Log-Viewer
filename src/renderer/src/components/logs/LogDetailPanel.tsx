@@ -5,6 +5,7 @@ import { encodeForDisplay, type ByteEncodingMode } from '../../lib/byteEncoding'
 interface LogDetailPanelProps {
   entry: LogEntry | null
   mode: ByteEncodingMode
+  commandName?: string
   onClose: () => void
   onJumpToDebugLogs: (centerTimestamp: string, windowMs: number) => void
 }
@@ -22,7 +23,13 @@ const CORRELATION_WINDOWS: CorrelationWindowOption[] = [
 
 const DEFAULT_CORRELATION_WINDOW_MS = 5000
 
-function LogDetailPanel({ entry, mode, onClose, onJumpToDebugLogs }: LogDetailPanelProps): React.JSX.Element | null {
+function LogDetailPanel({
+  entry,
+  mode,
+  commandName,
+  onClose,
+  onJumpToDebugLogs
+}: LogDetailPanelProps): React.JSX.Element | null {
   const [windowMs, setWindowMs] = useState(DEFAULT_CORRELATION_WINDOW_MS)
   const [correlated, setCorrelated] = useState<DebugLogEntry[]>([])
   const [loading, setLoading] = useState(false)
@@ -61,6 +68,7 @@ function LogDetailPanel({ entry, mode, onClose, onJumpToDebugLogs }: LogDetailPa
       <div className="flex items-center gap-2 border-b border-neutral-800 px-4 py-2 text-xs">
         <span className="text-neutral-500">{new Date(entry.timestamp).toLocaleString()}</span>
         <span className="rounded bg-neutral-800 px-1.5 py-0.5 uppercase text-neutral-400">{entry.source}</span>
+        {commandName && <span className="text-neutral-400">{commandName}</span>}
       </div>
 
       <div className="max-h-40 overflow-auto border-b border-neutral-800 p-4 font-mono text-xs">
