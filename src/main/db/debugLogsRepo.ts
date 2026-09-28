@@ -1,6 +1,11 @@
 import type Database from 'better-sqlite3'
 import type { DebugLogEntry, DebugLogQueryFilter, DebugLogQueryResult } from '@shared/types'
 
+// Cap on how many rows a single correlation window can return, so a
+// pathologically large windowMs (or a busy debug stream) can't pull the
+// whole table into memory in one query.
+const MAX_WINDOW_ENTRIES = 2000
+
 interface DebugLogRow {
   id: number
   timestamp: string
@@ -61,6 +66,26 @@ export class DebugLogsRepo {
     const nextCursor = entries.length === filter.limit ? String(entries[entries.length - 1].id) : null
 
     return { entries: entries.reverse(), nextCursor }
+  }
+
+  // All debug-log entries within windowMs of centerTimestamp, on either
+  // side, ascending by id. Both streams are timestamped with the same
+  // process's `Date.toISOString()` (UTC), so we go through Date rather than
+  // comparing strings directly — that stays correct even if a caller passes
+  // a timestamp in a different but Date-parseable format/offset.
+  queryAroundTimestamp(centerTimestamp: string, windowMs: number): DebugLogEntry[] {
+    const centerMs = new Date(centerTimestamp).getTime()
+    const from = new Date(centerMs - windowMs).toISOString()
+    const to = new Date(centerMs + windowMs).toISOString()
+
+    const rows = this.db
+      .prepare<
+        [string, string, number],
+        DebugLogRow
+      >('SELECT * FROM debug_logs WHERE timestamp >= ? AND timestamp <= ? ORDER BY id ASC LIMIT ?')
+      .all(from, to, MAX_WINDOW_ENTRIES)
+
+    return rows.map(toDebugLogEntry)
   }
 
   clearAll(): number {

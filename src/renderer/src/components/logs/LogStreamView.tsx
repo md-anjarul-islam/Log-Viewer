@@ -15,7 +15,11 @@ import LogFilterBar from './LogFilterBar'
 import LogDetailPanel from './LogDetailPanel'
 import ClearLogsDialog from './ClearLogsDialog'
 
-function LogStreamView(): React.JSX.Element {
+interface LogStreamViewProps {
+  onJumpToDebugLogs: (centerTimestamp: string, windowMs: number) => void
+}
+
+function LogStreamView({ onJumpToDebugLogs }: LogStreamViewProps): React.JSX.Element {
   const liveEntries = useLogsStore((s) => s.entries)
   const filter = useLogsStore((s) => s.filter)
   const historicalResults = useLogsStore((s) => s.historicalResults)
@@ -142,7 +146,12 @@ function LogStreamView(): React.JSX.Element {
         </button>
       )}
 
-      <LogDetailPanel entry={selected} mode={mode} onClose={() => setSelected(null)} />
+      <LogDetailPanel
+        entry={selected}
+        mode={mode}
+        onClose={() => setSelected(null)}
+        onJumpToDebugLogs={onJumpToDebugLogs}
+      />
 
       <ClearLogsDialog
         open={clearDialogOpen}
