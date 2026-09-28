@@ -76,7 +76,12 @@ export function registerListPortsHandler(serialManager: SerialManager): void {
 export function registerCorrelationWindowHandler(settingsStore: SettingsStore): void {
   ipcMain.handle(IPC.SERIAL_GET_CORRELATION_WINDOW_MS, () => settingsStore.getCorrelationWindowMs('main'))
 
-  ipcMain.handle(IPC.SERIAL_SET_CORRELATION_WINDOW_MS, (_event, windowMs: number) =>
-    settingsStore.setCorrelationWindowMs('main', windowMs)
-  )
+  ipcMain.handle(IPC.SERIAL_SET_CORRELATION_WINDOW_MS, (_event, windowMs: number) => {
+    try {
+      const saved = settingsStore.setCorrelationWindowMs('main', windowMs)
+      return { ok: true as const, windowMs: saved }
+    } catch (err) {
+      return { ok: false as const, error: err instanceof Error ? err.message : String(err) }
+    }
+  })
 }

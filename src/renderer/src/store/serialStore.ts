@@ -16,7 +16,7 @@ interface SerialState {
   loadAutoReconnect: () => Promise<void>
   setAutoReconnect: (enabled: boolean) => Promise<void>
   loadCorrelationWindowMs: () => Promise<void>
-  setCorrelationWindowMs: (windowMs: number) => Promise<void>
+  setCorrelationWindowMs: (windowMs: number) => Promise<{ ok: true } | { ok: false; error: string }>
 }
 
 export const useSerialStore = create<SerialState>((set) => ({
@@ -61,7 +61,11 @@ export const useSerialStore = create<SerialState>((set) => ({
   },
 
   setCorrelationWindowMs: async (windowMs) => {
-    const correlationWindowMs = await window.api.serial.setCorrelationWindowMs(windowMs)
-    set({ correlationWindowMs })
+    const result = await window.api.serial.setCorrelationWindowMs(windowMs)
+    if (result.ok) {
+      set({ correlationWindowMs: result.windowMs })
+      return { ok: true }
+    }
+    return { ok: false, error: result.error }
   }
 }))
