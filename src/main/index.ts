@@ -19,6 +19,10 @@ const settingsStore = new SettingsStore()
 const serialManager = new SerialManager(settingsStore, 'main')
 const debugSerialManager = new SerialManager(settingsStore, 'debug')
 const scheduler = new Scheduler((command) => {
+  if (!serialManager.getStatus().connected) {
+    console.warn(`Skipping scheduled run of "${command.name}": device not connected`)
+    return
+  }
   logIngestor?.beginRun(command.id, 'scheduled')
   serialManager.write(command.commandString).catch((err) => {
     console.error(`Scheduled run of "${command.name}" failed:`, err instanceof Error ? err.message : err)
