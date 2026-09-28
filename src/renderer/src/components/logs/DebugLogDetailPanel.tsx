@@ -1,13 +1,11 @@
 import type { DebugLogEntry } from '@shared/types'
-import { encodeForDisplay, type ByteEncodingMode } from '../../lib/byteEncoding'
 
 interface DebugLogDetailPanelProps {
   entry: DebugLogEntry | null
-  mode: ByteEncodingMode
   onClose: () => void
 }
 
-function DebugLogDetailPanel({ entry, mode, onClose }: DebugLogDetailPanelProps): React.JSX.Element | null {
+function DebugLogDetailPanel({ entry, onClose }: DebugLogDetailPanelProps): React.JSX.Element | null {
   if (!entry) return null
 
   return (
@@ -24,7 +22,7 @@ function DebugLogDetailPanel({ entry, mode, onClose }: DebugLogDetailPanelProps)
       </div>
 
       <div className="flex-1 overflow-auto p-4 font-mono text-xs">
-        <pre className="whitespace-pre-wrap text-neutral-300">{encodeForDisplay(entry.raw, mode)}</pre>
+        <pre className="whitespace-pre-wrap text-neutral-300">{entry.raw}</pre>
       </div>
     </div>
   )

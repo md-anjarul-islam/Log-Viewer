@@ -169,7 +169,7 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
 
             <p className="mb-3 text-xs text-neutral-500">
               Listens on a second serial link to the same hardware (e.g. a dedicated debug/logging UART) and stores its
-              output separately, under Debug Logs.
+              output separately, under Debug Logs. Lines are read as plain ASCII text, always delimited by LF.
             </p>
 
             {(debugEnabled || debugStatus.connected || debugStatus.reconnecting) && (
@@ -181,6 +181,7 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
                     ports={ports}
                     loadingPorts={loadingPorts}
                     onRefresh={refreshPorts}
+                    showDelimiter={false}
                   />
                 )}
 
@@ -196,7 +197,7 @@ function ConnectionSettingsModal({ open, onClose }: ConnectionSettingsModalProps
                   ) : (
                     <button
                       onClick={handleConnectDebug}
-                      disabled={!debugForm.selectedPath || debugConnecting || !debugForm.delimiterValid || debugPortConflict}
+                      disabled={!debugForm.selectedPath || debugConnecting || debugPortConflict}
                       className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                     >
                       {debugConnecting ? 'Connecting…' : 'Connect'}

@@ -20,6 +20,12 @@ export const SIMULATED_DEVICE_PATH = '__simulated__'
 // looks like silently dropped data once the response is split across rows.
 const DEFAULT_DELIMITER_HEX = '04'
 
+// The debug channel is a plain-text logging UART, not a binary
+// command/response protocol — it always frames lines with LF, and that
+// framing byte is never itself meaningful payload, so it's stripped rather
+// than kept (unlike the main channel's delimiter, see below).
+const DEBUG_DELIMITER_HEX = '0a'
+
 function resolveDelimiter(delimiterHex: string | undefined): Buffer {
   if (delimiterHex && /^([0-9a-fA-F]{2})+$/.test(delimiterHex)) {
     return Buffer.from(delimiterHex, 'hex')
@@ -29,9 +35,12 @@ function resolveDelimiter(delimiterHex: string | undefined): Buffer {
 
 type SerialPortLike = SerialPort | SimulatedSerialPort
 
-// Emits 'line' (a hex string of the raw bytes received, e.g. "48656c6c6f" —
+// Emits 'line' and 'status-change' (SerialStatus). For the main channel,
+// 'line' is a hex string of the raw bytes received (e.g. "48656c6c6f") —
 // hardware payloads aren't assumed to be text, so bytes are never decoded
-// as UTF-8 here) and 'status-change' (SerialStatus).
+// as UTF-8 there. The debug channel is always plain ASCII text read off a
+// logging UART, always delimited by LF, so its 'line' is emitted as
+// already-decoded ASCII text instead.
 // Owns a single serial connection at a time. A close/error from the port
 // itself never retries on its own; it only starts polling for the
 // remembered device to reappear when auto-reconnect is enabled AND the
@@ -73,10 +82,11 @@ export class SerialManager extends EventEmitter {
   }
 
   private open(path: string, baudRate: number, delimiterHex: string): Promise<void> {
+    const isDebugChannel = this.channel === 'debug'
     return new Promise((resolve, reject) => {
       const port: SerialPortLike =
         path === SIMULATED_DEVICE_PATH
-          ? new SimulatedSerialPort({ path, delimiterHex })
+          ? new SimulatedSerialPort({ path, delimiterHex: isDebugChannel ? DEBUG_DELIMITER_HEX : delimiterHex })
           : new SerialPort({ path, baudRate, autoOpen: false })
 
       port.open((err) => {
@@ -86,13 +96,23 @@ export class SerialManager extends EventEmitter {
         }
 
         this.port = port
-        this.settings.setLastDevice(this.channel, { path, baudRate, delimiterHex })
+        this.settings.setLastDevice(this.channel, {
+          path,
+          baudRate,
+          delimiterHex: isDebugChannel ? DEBUG_DELIMITER_HEX : delimiterHex
+        })
         const parser = port.pipe(
-          new ReadlineParser({
-            delimiter: resolveDelimiter(delimiterHex),
-            encoding: 'hex',
-            includeDelimiter: true
-          })
+          isDebugChannel
+            ? new ReadlineParser({
+                delimiter: Buffer.from(DEBUG_DELIMITER_HEX, 'hex'),
+                encoding: 'ascii',
+                includeDelimiter: false
+              })
+            : new ReadlineParser({
+                delimiter: resolveDelimiter(delimiterHex),
+                encoding: 'hex',
+                includeDelimiter: true
+              })
         )
         parser.on('data', (line: string) => this.emit('line', line))
 

@@ -3,12 +3,6 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import type { DebugLogEntry } from '@shared/types'
 import { isDebugFilterActive, useDebugLogsStore } from '../../store/debugLogsStore'
 import { compileSearch, isSearchActive, matchesSearch } from '../../lib/logSearch'
-import {
-  BYTE_ENCODING_MODES,
-  DEFAULT_BYTE_ENCODING_MODE,
-  encodeForDisplay,
-  type ByteEncodingMode
-} from '../../lib/byteEncoding'
 import { useAutoScroll } from '../../hooks/useAutoScroll'
 import DebugLogRow from './DebugLogRow'
 import DebugLogFilterBar from './DebugLogFilterBar'
@@ -27,8 +21,6 @@ function DebugLogStreamView(): React.JSX.Element {
   const filtered = isDebugFilterActive(filter)
   const baseEntries = filtered ? historicalResults : liveEntries
 
-  const [mode, setMode] = useState<ByteEncodingMode>(DEFAULT_BYTE_ENCODING_MODE)
-
   const compiledSearch = useMemo(
     () => compileSearch(search),
     [search.term, search.mode, search.caseSensitive]
@@ -36,10 +28,8 @@ function DebugLogStreamView(): React.JSX.Element {
   const searching = isSearchActive(search)
   const entries = useMemo(
     () =>
-      searching
-        ? baseEntries.filter((e) => matchesSearch(encodeForDisplay(e.raw, mode), compiledSearch))
-        : baseEntries,
-    [baseEntries, searching, compiledSearch, mode]
+      searching ? baseEntries.filter((e) => matchesSearch(e.raw, compiledSearch)) : baseEntries,
+    [baseEntries, searching, compiledSearch]
   )
 
   const parentRef = useRef<HTMLDivElement>(null)
@@ -60,21 +50,6 @@ function DebugLogStreamView(): React.JSX.Element {
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-semibold text-neutral-100">Debug Logs</h1>
-          <div className="flex items-center rounded-md border border-neutral-700 p-0.5">
-            {BYTE_ENCODING_MODES.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                aria-pressed={mode === m}
-                className={`rounded px-2 py-0.5 text-[11px] font-medium uppercase ${
-                  mode === m ? 'bg-indigo-600 text-white' : 'text-neutral-400 hover:text-neutral-200'
-                }`}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
         </div>
         <span className="text-xs text-neutral-500">{entries.length} lines</span>
       </div>
@@ -119,7 +94,6 @@ function DebugLogStreamView(): React.JSX.Element {
                 >
                   <DebugLogRow
                     entry={entries[virtualRow.index]}
-                    mode={mode}
                     onSelect={setSelected}
                     highlight={compiledSearch}
                   />
@@ -139,7 +113,7 @@ function DebugLogStreamView(): React.JSX.Element {
         </button>
       )}
 
-      <DebugLogDetailPanel entry={selected} mode={mode} onClose={() => setSelected(null)} />
+      <DebugLogDetailPanel entry={selected} onClose={() => setSelected(null)} />
 
       <ClearLogsDialog
         open={clearDialogOpen}

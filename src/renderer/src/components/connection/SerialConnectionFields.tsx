@@ -8,6 +8,10 @@ interface SerialConnectionFieldsProps {
   loadingPorts: boolean
   onRefresh: () => void
   disabled?: boolean
+  // The debug channel always frames lines with LF, so its delimiter isn't
+  // user-configurable — hide the field rather than show a setting that has
+  // no effect.
+  showDelimiter?: boolean
 }
 
 function SerialConnectionFields({
@@ -16,7 +20,8 @@ function SerialConnectionFields({
   ports,
   loadingPorts,
   onRefresh,
-  disabled
+  disabled,
+  showDelimiter = true
 }: SerialConnectionFieldsProps): React.JSX.Element {
   return (
     <div className="space-y-2">
@@ -68,36 +73,40 @@ function SerialConnectionFields({
         </select>
       </div>
 
-      <div className="flex items-center gap-2">
-        <label htmlFor={`${idPrefix}-delimiter`} className="w-16 shrink-0 text-xs text-neutral-400">
-          Delimiter
-        </label>
-        <select
-          id={`${idPrefix}-delimiter`}
-          value={form.delimiterPreset}
-          onChange={(e) => form.setDelimiterPreset(e.target.value)}
-          disabled={disabled}
-          className="flex-1 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200 disabled:opacity-50"
-        >
-          {DELIMITER_PRESETS.map((preset) => (
-            <option key={preset.hex} value={preset.hex}>
-              {preset.label}
-            </option>
-          ))}
-        </select>
-        {form.isCustomDelimiter && (
-          <input
-            type="text"
-            value={form.customDelimiterHex}
-            onChange={(e) => form.setCustomDelimiterHex(e.target.value)}
-            placeholder="hex bytes, e.g. 04"
-            disabled={disabled}
-            className="w-28 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200 disabled:opacity-50"
-          />
-        )}
-      </div>
-      {form.isCustomDelimiter && !form.delimiterValid && (
-        <p className="pl-[4.5rem] text-[11px] text-red-400">Enter valid hex bytes (e.g. 04 or 0d0a).</p>
+      {showDelimiter && (
+        <>
+          <div className="flex items-center gap-2">
+            <label htmlFor={`${idPrefix}-delimiter`} className="w-16 shrink-0 text-xs text-neutral-400">
+              Delimiter
+            </label>
+            <select
+              id={`${idPrefix}-delimiter`}
+              value={form.delimiterPreset}
+              onChange={(e) => form.setDelimiterPreset(e.target.value)}
+              disabled={disabled}
+              className="flex-1 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200 disabled:opacity-50"
+            >
+              {DELIMITER_PRESETS.map((preset) => (
+                <option key={preset.hex} value={preset.hex}>
+                  {preset.label}
+                </option>
+              ))}
+            </select>
+            {form.isCustomDelimiter && (
+              <input
+                type="text"
+                value={form.customDelimiterHex}
+                onChange={(e) => form.setCustomDelimiterHex(e.target.value)}
+                placeholder="hex bytes, e.g. 04"
+                disabled={disabled}
+                className="w-28 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200 disabled:opacity-50"
+              />
+            )}
+          </div>
+          {form.isCustomDelimiter && !form.delimiterValid && (
+            <p className="pl-[4.5rem] text-[11px] text-red-400">Enter valid hex bytes (e.g. 04 or 0d0a).</p>
+          )}
+        </>
       )}
     </div>
   )
