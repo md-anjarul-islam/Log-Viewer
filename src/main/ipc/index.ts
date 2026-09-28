@@ -7,11 +7,13 @@ import type { DebugLogsRepo } from '../db/debugLogsRepo'
 import type { LogIngestor } from '../logging/LogIngestor'
 import type { Scheduler } from '../scheduler/Scheduler'
 import type { SerialManager } from '../serial/SerialManager'
+import type { SettingsStore } from '../settings/SettingsStore'
 import { registerCommandHandlers } from './registerCommandHandlers'
 import { registerCategoryHandlers } from './registerCategoryHandlers'
 import {
   registerSerialHandlers,
   registerListPortsHandler,
+  registerCorrelationWindowHandler,
   MAIN_SERIAL_CHANNELS,
   DEBUG_SERIAL_CHANNELS
 } from './registerSerialHandlers'
@@ -25,6 +27,7 @@ interface IpcDeps {
   debugLogsRepo: DebugLogsRepo
   serialManager: SerialManager
   debugSerialManager: SerialManager
+  settingsStore: SettingsStore
   scheduler: Scheduler
   logIngestor: LogIngestor
   getWindow: () => BrowserWindow | null
@@ -44,6 +47,7 @@ export function registerIpcHandlers(deps: IpcDeps): void {
   registerListPortsHandler(deps.serialManager)
   registerSerialHandlers(deps.serialManager, deps.getWindow, MAIN_SERIAL_CHANNELS)
   registerSerialHandlers(deps.debugSerialManager, deps.getWindow, DEBUG_SERIAL_CHANNELS)
+  registerCorrelationWindowHandler(deps.settingsStore)
   registerLogHandlers(deps.logsRepo, deps.getWindow)
   registerDebugLogHandlers(deps.debugLogsRepo, deps.getWindow)
 }

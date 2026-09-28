@@ -5,12 +5,6 @@ import type { LogSource } from '@shared/types'
 import type { LogsRepo } from '../db/logsRepo'
 import type { SerialManager } from '../serial/SerialManager'
 
-// How long an incoming line can still be attributed to the run that
-// triggered it. A v1 simplification: hardware without a clear
-// request/response boundary (or with responses slower than this window)
-// will need a per-command correlation rule down the line.
-const CORRELATION_WINDOW_MS = 2000
-
 interface PendingRun {
   runId: string
   commandId: number
@@ -24,7 +18,14 @@ export class LogIngestor {
   constructor(
     serialManager: SerialManager,
     private logsRepo: LogsRepo,
-    private getWindow: () => BrowserWindow | null
+    private getWindow: () => BrowserWindow | null,
+    // How long an incoming line can still be attributed to the run that
+    // triggered it, read fresh on each run so a change in the connection
+    // settings takes effect immediately. A v1 simplification: hardware
+    // without a clear request/response boundary (or with responses slower
+    // than this window) will need a per-command correlation rule down the
+    // line.
+    private getCorrelationWindowMs: () => number
   ) {
     serialManager.on('line', (raw: string) => this.handleLine(raw))
   }
@@ -37,7 +38,7 @@ export class LogIngestor {
     if (this.pendingRunTimer) clearTimeout(this.pendingRunTimer)
     this.pendingRunTimer = setTimeout(() => {
       this.pendingRun = null
-    }, CORRELATION_WINDOW_MS)
+    }, this.getCorrelationWindowMs())
     return runId
   }
 

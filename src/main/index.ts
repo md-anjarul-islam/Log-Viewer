@@ -66,7 +66,9 @@ app.whenReady().then(() => {
   const categoriesRepo = new CategoriesRepo(db)
   const logsRepo = new LogsRepo(db)
   const debugLogsRepo = new DebugLogsRepo(db)
-  logIngestor = new LogIngestor(serialManager, logsRepo, () => mainWindow)
+  logIngestor = new LogIngestor(serialManager, logsRepo, () => mainWindow, () =>
+    settingsStore.getCorrelationWindowMs('main')
+  )
   new DebugLogIngestor(debugSerialManager, debugLogsRepo, () => mainWindow)
 
   for (const command of commandsRepo.list()) {
@@ -81,6 +83,7 @@ app.whenReady().then(() => {
     debugLogsRepo,
     serialManager,
     debugSerialManager,
+    settingsStore,
     scheduler,
     logIngestor,
     getWindow: () => mainWindow

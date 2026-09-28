@@ -23,6 +23,10 @@ export const IPC = {
   SERIAL_GET_STATUS: 'serial:getStatus',
   SERIAL_GET_AUTO_RECONNECT: 'serial:getAutoReconnect',
   SERIAL_SET_AUTO_RECONNECT: 'serial:setAutoReconnect',
+  // Correlation window for attributing incoming lines to command runs — only
+  // meaningful for the main (command/response) connection.
+  SERIAL_GET_CORRELATION_WINDOW_MS: 'serial:getCorrelationWindowMs',
+  SERIAL_SET_CORRELATION_WINDOW_MS: 'serial:setCorrelationWindowMs',
 
   // Debug connection: a second, independent serial link to the same
   // hardware (e.g. a dedicated debug/logging UART). Port enumeration is

@@ -1,6 +1,7 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type { SerialManager } from '../serial/SerialManager'
+import type { SettingsStore } from '../settings/SettingsStore'
 
 interface SerialIpcChannels {
   connect: string
@@ -67,4 +68,15 @@ export function registerSerialHandlers(
 
 export function registerListPortsHandler(serialManager: SerialManager): void {
   ipcMain.handle(IPC.SERIAL_LIST_PORTS, () => serialManager.listPorts())
+}
+
+// Correlation window is only exposed for the main channel — it's the
+// command/response link LogIngestor watches, so there's nothing analogous
+// on the debug channel.
+export function registerCorrelationWindowHandler(settingsStore: SettingsStore): void {
+  ipcMain.handle(IPC.SERIAL_GET_CORRELATION_WINDOW_MS, () => settingsStore.getCorrelationWindowMs('main'))
+
+  ipcMain.handle(IPC.SERIAL_SET_CORRELATION_WINDOW_MS, (_event, windowMs: number) =>
+    settingsStore.setCorrelationWindowMs('main', windowMs)
+  )
 }
