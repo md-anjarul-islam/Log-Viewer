@@ -47,6 +47,11 @@ const MIGRATIONS: string[] = [
     raw       TEXT NOT NULL
   );
   CREATE INDEX idx_debug_logs_timestamp ON debug_logs(timestamp);
+  `,
+  `
+  ALTER TABLE commands ADD COLUMN timeout_ms INTEGER;
+  ALTER TABLE commands ADD COLUMN idle_gap_ms INTEGER;
+  ALTER TABLE commands ADD COLUMN terminator_pattern TEXT;
   `
 ]
 

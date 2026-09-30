@@ -4,7 +4,7 @@ import type { CategoriesRepo } from '../db/categoriesRepo'
 import type { CommandsRepo } from '../db/commandsRepo'
 import type { LogsRepo } from '../db/logsRepo'
 import type { DebugLogsRepo } from '../db/debugLogsRepo'
-import type { LogIngestor } from '../logging/LogIngestor'
+import type { CommandQueue } from '../serial/CommandQueue'
 import type { Scheduler } from '../scheduler/Scheduler'
 import type { SerialManager } from '../serial/SerialManager'
 import type { SettingsStore } from '../settings/SettingsStore'
@@ -29,7 +29,7 @@ interface IpcDeps {
   debugSerialManager: SerialManager
   settingsStore: SettingsStore
   scheduler: Scheduler
-  logIngestor: LogIngestor
+  commandQueue: CommandQueue
   getWindow: () => BrowserWindow | null
 }
 
@@ -38,9 +38,8 @@ export function registerIpcHandlers(deps: IpcDeps): void {
   registerCommandHandlers(
     deps.commandsRepo,
     deps.categoriesRepo,
-    deps.serialManager,
     deps.scheduler,
-    deps.logIngestor,
+    deps.commandQueue,
     deps.getWindow
   )
   registerCategoryHandlers(deps.categoriesRepo, deps.commandsRepo, deps.getWindow)

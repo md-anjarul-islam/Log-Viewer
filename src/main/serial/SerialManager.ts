@@ -50,6 +50,7 @@ export class SerialManager extends EventEmitter {
   private port: SerialPortLike | null = null
   private manualDisconnect = false
   private reconnecting = false
+  private reconnectAttemptInFlight = false
   private reconnectTimer: ReturnType<typeof setInterval> | null = null
 
   constructor(
@@ -121,6 +122,10 @@ export class SerialManager extends EventEmitter {
         parser.on('data', (line: string) => this.emit('line', line))
 
         port.on('close', () => {
+          // Drop the parser (and any partial, delimiter-less frame it still
+          // buffers) so it can't merge into the first frame after a reconnect.
+          port.unpipe(parser)
+          parser.destroy()
           this.port = null
           this.emit('status-change', this.buildStatus(false))
           if (!this.manualDisconnect && this.settings.getSerialSettings(this.channel).autoReconnect) {
@@ -203,15 +208,20 @@ export class SerialManager extends EventEmitter {
     this.emit('status-change', this.buildStatus(false))
 
     const attempt = async (): Promise<void> => {
-      if (!this.reconnecting) return
-      const available = await this.listPorts()
-      if (!available.some((p) => p.path === path)) return
+      // Non-reentrant: a slow listPorts()/open() must not overlap the next
+      // tick, or two ports could be opened and one leaked.
+      if (!this.reconnecting || this.reconnectAttemptInFlight) return
+      this.reconnectAttemptInFlight = true
       try {
+        const available = await this.listPorts()
+        if (!this.reconnecting || !available.some((p) => p.path === path)) return
         await this.open(path, baudRate, delimiterHex)
         this.clearReconnectState()
       } catch {
         // Port is enumerated but not yet openable (still settling after
         // being plugged in); keep polling on the next tick.
+      } finally {
+        this.reconnectAttemptInFlight = false
       }
     }
 

@@ -10,23 +10,22 @@ import { SerialManager } from './serial/SerialManager'
 import { SettingsStore } from './settings/SettingsStore'
 import { Scheduler } from './scheduler/Scheduler'
 import { LogIngestor } from './logging/LogIngestor'
+import { CommandQueue } from './serial/CommandQueue'
 import { DebugLogIngestor } from './logging/DebugLogIngestor'
 import { registerIpcHandlers } from './ipc'
 
 let mainWindow: BrowserWindow | null = null
-let logIngestor: LogIngestor | null = null
+let commandQueue: CommandQueue | null = null
 const settingsStore = new SettingsStore()
 const serialManager = new SerialManager(settingsStore, 'main')
 const debugSerialManager = new SerialManager(settingsStore, 'debug')
-const scheduler = new Scheduler((command) => {
-  if (!serialManager.getStatus().connected) {
-    console.warn(`Skipping scheduled run of "${command.name}": device not connected`)
-    return
+// Scheduled ticks only enqueue; CommandQueue sends one command at a time.
+const scheduler = new Scheduler((command, source) => {
+  try {
+    commandQueue?.enqueue(command, source)
+  } catch (err) {
+    console.error(`Scheduled run of "${command.name}" not queued:`, err instanceof Error ? err.message : err)
   }
-  logIngestor?.beginRun(command.id, 'scheduled')
-  serialManager.write(command.commandString).catch((err) => {
-    console.error(`Scheduled run of "${command.name}" failed:`, err instanceof Error ? err.message : err)
-  })
 })
 
 function createWindow(): BrowserWindow {
@@ -66,7 +65,9 @@ app.whenReady().then(() => {
   const categoriesRepo = new CategoriesRepo(db)
   const logsRepo = new LogsRepo(db)
   const debugLogsRepo = new DebugLogsRepo(db)
-  logIngestor = new LogIngestor(serialManager, logsRepo, () => mainWindow, () =>
+  const logIngestor = new LogIngestor(serialManager, logsRepo, () => mainWindow)
+  // The connection's "correlation window" setting is the default command timeout.
+  commandQueue = new CommandQueue(serialManager, logIngestor, () =>
     settingsStore.getCorrelationWindowMs('main')
   )
   new DebugLogIngestor(debugSerialManager, debugLogsRepo, () => mainWindow)
@@ -85,7 +86,7 @@ app.whenReady().then(() => {
     debugSerialManager,
     settingsStore,
     scheduler,
-    logIngestor,
+    commandQueue,
     getWindow: () => mainWindow
   })
 
@@ -99,6 +100,7 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   scheduler.stopAll()
+  commandQueue?.clear()
   serialManager.disconnect()
   debugSerialManager.disconnect()
 })
