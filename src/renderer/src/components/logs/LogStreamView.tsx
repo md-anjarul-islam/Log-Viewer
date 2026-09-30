@@ -138,6 +138,7 @@ function LogStreamView({ onJumpToDebugLogs }: LogStreamViewProps): React.JSX.Ele
                     }
                     onSelect={setSelected}
                     highlight={compiledSearch}
+                    isSelected={selected?.id === entries[virtualRow.index].id}
                   />
                 </div>
               ))}
