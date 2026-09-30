@@ -10,6 +10,7 @@ interface LogRowProps {
   measureRef?: (el: HTMLDivElement | null) => void
   onSelect?: (entry: LogEntry) => void
   highlight?: CompiledSearch
+  isSelected?: boolean
 }
 
 const SOURCE_STYLES: Record<LogEntry['source'], string> = {
@@ -18,7 +19,7 @@ const SOURCE_STYLES: Record<LogEntry['source'], string> = {
   unsolicited: 'bg-neutral-800 text-neutral-500'
 }
 
-function LogRowImpl({ entry, mode, commandName, measureRef, onSelect, highlight }: LogRowProps): React.JSX.Element {
+function LogRowImpl({ entry, mode, commandName, measureRef, onSelect, highlight, isSelected }: LogRowProps): React.JSX.Element {
   const time = new Date(entry.timestamp).toLocaleTimeString()
   const displayText = encodeForDisplay(entry.raw, mode)
   const segments = highlight?.regex ? highlightSegments(displayText, highlight) : null
@@ -27,7 +28,11 @@ function LogRowImpl({ entry, mode, commandName, measureRef, onSelect, highlight 
     <div
       ref={measureRef}
       onClick={() => onSelect?.(entry)}
-      className="cursor-pointer border-b border-neutral-900 px-3 py-1.5 hover:bg-neutral-800/50"
+      className={`cursor-pointer border-b border-neutral-900 border-l-2 px-3 py-1.5 ${
+        isSelected
+          ? 'border-l-indigo-500 bg-indigo-500/15 hover:bg-indigo-500/20'
+          : 'border-l-transparent hover:bg-neutral-800/50'
+      }`}
     >
       <div className="flex items-start gap-2 font-mono text-xs">
         <span className="shrink-0 pt-0.5 text-neutral-600">{time}</span>
