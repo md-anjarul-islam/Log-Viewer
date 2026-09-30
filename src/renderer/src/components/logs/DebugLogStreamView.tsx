@@ -96,6 +96,7 @@ function DebugLogStreamView(): React.JSX.Element {
                     entry={entries[virtualRow.index]}
                     onSelect={setSelected}
                     highlight={compiledSearch}
+                    isSelected={selected?.id === entries[virtualRow.index].id}
                   />
                 </div>
               ))}
