@@ -1,5 +1,10 @@
 import type Database from 'better-sqlite3'
-import type { DebugLogEntry, DebugLogQueryFilter, DebugLogQueryResult } from '@shared/types'
+import type {
+  DebugLogEntry,
+  DebugLogQueryFilter,
+  DebugLogQueryResult,
+  DebugLogWindowResult
+} from '@shared/types'
 
 // Cap on how many rows a single correlation window can return, so a
 // pathologically large windowMs (or a busy debug stream) can't pull the
@@ -68,24 +73,39 @@ export class DebugLogsRepo {
     return { entries: entries.reverse(), nextCursor }
   }
 
-  // All debug-log entries within windowMs of centerTimestamp, on either
-  // side, ascending by id. Both streams are timestamped with the same
+  // Debug-log entries within windowMs of centerTimestamp, on either side,
+  // in chronological order. Both streams are timestamped with the same
   // process's `Date.toISOString()` (UTC), so we go through Date rather than
   // comparing strings directly — that stays correct even if a caller passes
   // a timestamp in a different but Date-parseable format/offset.
-  queryAroundTimestamp(centerTimestamp: string, windowMs: number): DebugLogEntry[] {
+  //
+  // Each side is capped separately and read outward from the center, so when
+  // the window holds more than MAX_WINDOW_ENTRIES rows it's the ones farthest
+  // from centerTimestamp that get dropped, never the ones right around it.
+  queryAroundTimestamp(centerTimestamp: string, windowMs: number): DebugLogWindowResult {
     const centerMs = new Date(centerTimestamp).getTime()
     const from = new Date(centerMs - windowMs).toISOString()
+    const center = new Date(centerMs).toISOString()
     const to = new Date(centerMs + windowMs).toISOString()
+    const perSide = MAX_WINDOW_ENTRIES / 2
 
-    const rows = this.db
+    // One extra row per side tells us whether that side was cut off.
+    const before = this.db
       .prepare<
         [string, string, number],
         DebugLogRow
-      >('SELECT * FROM debug_logs WHERE timestamp >= ? AND timestamp <= ? ORDER BY id ASC LIMIT ?')
-      .all(from, to, MAX_WINDOW_ENTRIES)
+      >('SELECT * FROM debug_logs WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp DESC, id DESC LIMIT ?')
+      .all(from, center, perSide + 1)
+    const after = this.db
+      .prepare<
+        [string, string, number],
+        DebugLogRow
+      >('SELECT * FROM debug_logs WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC, id ASC LIMIT ?')
+      .all(center, to, perSide + 1)
 
-    return rows.map(toDebugLogEntry)
+    const truncated = before.length > perSide || after.length > perSide
+    const rows = before.slice(0, perSide).reverse().concat(after.slice(0, perSide))
+    return { entries: rows.map(toDebugLogEntry), truncated }
   }
 
   clearAll(): number {

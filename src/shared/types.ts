@@ -149,3 +149,10 @@ export interface DebugLogWindowQuery {
   centerTimestamp: string
   windowMs: number
 }
+
+// `truncated` is set when the window held more rows than the per-query cap,
+// so only the ones nearest centerTimestamp (on each side) were returned.
+export interface DebugLogWindowResult {
+  entries: DebugLogEntry[]
+  truncated: boolean
+}

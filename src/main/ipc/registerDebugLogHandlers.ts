@@ -2,10 +2,10 @@ import { ipcMain, type BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type {
   ClearLogsResult,
-  DebugLogEntry,
   DebugLogQueryFilter,
   DebugLogQueryResult,
   DebugLogWindowQuery,
+  DebugLogWindowResult,
   LogsClearedEvent
 } from '@shared/types'
 import type { DebugLogsRepo } from '../db/debugLogsRepo'
@@ -21,7 +21,7 @@ export function registerDebugLogHandlers(
 
   ipcMain.handle(
     IPC.DEBUG_LOGS_QUERY_AROUND,
-    (_event, query: DebugLogWindowQuery): DebugLogEntry[] =>
+    (_event, query: DebugLogWindowQuery): DebugLogWindowResult =>
       debugLogsRepo.queryAroundTimestamp(query.centerTimestamp, query.windowMs)
   )
 

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { DebugLogEntry, LogEntry } from '@shared/types'
 import { encodeForDisplay, type ByteEncodingMode } from '../../lib/byteEncoding'
+import { useDebugLogsStore } from '../../store/debugLogsStore'
 
 interface LogDetailPanelProps {
   entry: LogEntry | null
@@ -23,6 +24,35 @@ const CORRELATION_WINDOWS: CorrelationWindowOption[] = [
 
 const DEFAULT_CORRELATION_WINDOW_MS = 5000
 
+const NO_ENTRIES: DebugLogEntry[] = []
+
+interface WindowSnapshot {
+  entries: DebugLogEntry[]
+  truncated: boolean
+  // Last live-tail id already in the store when the query was sent. Anything
+  // at or below it was in the DB by then (lines are stored before they're
+  // streamed), so only newer live lines can be missing from `entries`.
+  liveAfterId: number
+}
+
+// Live-tail lines newer than afterId whose timestamp falls in [from, to].
+// The live tail is in id order (= arrival order), so binary-search the start
+// and stop at the first line past the window.
+function liveEntriesInWindow(live: DebugLogEntry[], afterId: number, from: string, to: string): DebugLogEntry[] {
+  let lo = 0
+  let hi = live.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (live[mid].id <= afterId) lo = mid + 1
+    else hi = mid
+  }
+  const result: DebugLogEntry[] = []
+  for (let i = lo; i < live.length && live[i].timestamp <= to; i++) {
+    if (live[i].timestamp >= from) result.push(live[i])
+  }
+  return result
+}
+
 function LogDetailPanel({
   entry,
   mode,
@@ -31,20 +61,25 @@ function LogDetailPanel({
   onJumpToDebugLogs
 }: LogDetailPanelProps): React.JSX.Element | null {
   const [windowMs, setWindowMs] = useState(DEFAULT_CORRELATION_WINDOW_MS)
-  const [correlated, setCorrelated] = useState<DebugLogEntry[]>([])
+  const [snapshot, setSnapshot] = useState<WindowSnapshot | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!entry) {
-      setCorrelated([])
+      setSnapshot(null)
       return
     }
     let cancelled = false
+    const live = useDebugLogsStore.getState().entries
+    const liveAfterId = live.length > 0 ? live[live.length - 1].id : -1
     setLoading(true)
     window.api.debugLogs
       .queryAroundTimestamp({ centerTimestamp: entry.timestamp, windowMs })
-      .then((entries) => {
-        if (!cancelled) setCorrelated(entries)
+      .then(({ entries, truncated }) => {
+        if (!cancelled) setSnapshot({ entries, truncated, liveAfterId })
+      })
+      .catch(() => {
+        if (!cancelled) setSnapshot(null)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -53,6 +88,24 @@ function LogDetailPanel({
       cancelled = true
     }
   }, [entry?.id, entry?.timestamp, windowMs])
+
+  // The DB query is a one-off snapshot, but the window can extend into the
+  // future (e.g. a log that just arrived), so debug lines streamed in after
+  // it are merged in live. Skipped when truncated: the snapshot's newer side
+  // was cut short, so appending live lines would leave a gap before them.
+  const mergeLive = entry != null && snapshot != null && !snapshot.truncated
+  const liveEntries = useDebugLogsStore((s) => (mergeLive ? s.entries : NO_ENTRIES))
+  const correlated = useMemo(() => {
+    if (!entry || !snapshot) return NO_ENTRIES
+    if (!mergeLive) return snapshot.entries
+    const centerMs = new Date(entry.timestamp).getTime()
+    const from = new Date(centerMs - windowMs).toISOString()
+    const to = new Date(centerMs + windowMs).toISOString()
+    const seen = new Set(snapshot.entries.map((d) => d.id))
+    const arrived = liveEntriesInWindow(liveEntries, snapshot.liveAfterId, from, to).filter((d) => !seen.has(d.id))
+    if (arrived.length === 0) return snapshot.entries
+    return snapshot.entries.concat(arrived).sort((a, b) => a.id - b.id)
+  }, [entry?.timestamp, windowMs, snapshot, mergeLive, liveEntries])
 
   if (!entry) return null
 
@@ -101,6 +154,11 @@ function LogDetailPanel({
           <div className="p-2 text-neutral-600">No debug logs in this window.</div>
         ) : (
           <ul className="space-y-1">
+            {snapshot?.truncated && (
+              <li className="px-2 py-1 text-[11px] text-amber-400/80">
+                Too many debug lines in this window — showing the ones nearest this log on each side.
+              </li>
+            )}
             {correlated.map((d) => (
               <li key={d.id} className="rounded bg-neutral-900 px-2 py-1">
                 <div className="text-[10px] text-neutral-500">{new Date(d.timestamp).toLocaleTimeString()}</div>

@@ -32,6 +32,10 @@ interface DebugLogsState {
   clearFilter: () => void
   runQuery: (loadMore?: boolean) => Promise<void>
 
+  // Re-fetches the currently displayed page from the DB — see logsStore.reload.
+  reloading: boolean
+  reload: () => Promise<void>
+
   search: SearchState
   setSearch: (patch: Partial<SearchState>) => void
   clearSearch: () => void
@@ -50,7 +54,12 @@ export const useDebugLogsStore = create<DebugLogsState>((set, get) => ({
   entries: [],
   appendBatch: (batch) =>
     set((state) => {
-      const next = state.entries.length > 0 ? state.entries.concat(batch) : batch
+      // A reload can already contain lines that were still buffered for the
+      // next frame when it ran; ids only grow, so drop anything not newer.
+      const lastId = state.entries.length > 0 ? state.entries[state.entries.length - 1].id : -1
+      const fresh = batch.filter((e) => e.id > lastId)
+      if (fresh.length === 0) return state
+      const next = state.entries.length > 0 ? state.entries.concat(fresh) : fresh
       return { entries: next.length > MAX_ENTRIES ? next.slice(next.length - MAX_ENTRIES) : next }
     }),
   removeOlderThan: (cutoffIso) =>
@@ -80,6 +89,23 @@ export const useDebugLogsStore = create<DebugLogsState>((set, get) => ({
       historicalCursor: result.nextCursor,
       historicalLoading: false
     })
+  },
+
+  reloading: false,
+  reload: async () => {
+    set({ reloading: true })
+    try {
+      const { filter } = get()
+      if (isDebugFilterActive(filter)) {
+        set({ historicalResults: [], historicalCursor: null })
+        await get().runQuery()
+      } else {
+        const result = await window.api.debugLogs.query({ limit: PAGE_SIZE })
+        set({ entries: result.entries })
+      }
+    } finally {
+      set({ reloading: false })
+    }
   },
 
   search: DEFAULT_SEARCH,

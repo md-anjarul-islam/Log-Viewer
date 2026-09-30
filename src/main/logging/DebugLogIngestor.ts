@@ -16,7 +16,10 @@ export class DebugLogIngestor {
   }
 
   private handleLine(raw: string): void {
-    const entry = this.debugLogsRepo.insert({ timestamp: new Date().toISOString(), raw })
+    // The parser strips the LF delimiter, but CRLF firmware still leaves a
+    // trailing CR that would otherwise be stored and displayed with the line.
+    const line = raw.endsWith('\r') ? raw.slice(0, -1) : raw
+    const entry = this.debugLogsRepo.insert({ timestamp: new Date().toISOString(), raw: line })
     this.getWindow()?.webContents.send(IPC.DEBUG_LOGS_STREAM, entry)
   }
 }
