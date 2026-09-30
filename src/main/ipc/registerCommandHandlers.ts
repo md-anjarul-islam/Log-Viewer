@@ -10,9 +10,8 @@ import type {
 } from '@shared/types'
 import type { CategoriesRepo } from '../db/categoriesRepo'
 import type { CommandsRepo } from '../db/commandsRepo'
-import type { LogIngestor } from '../logging/LogIngestor'
 import type { Scheduler } from '../scheduler/Scheduler'
-import type { SerialManager } from '../serial/SerialManager'
+import type { CommandQueue } from '../serial/CommandQueue'
 
 function formatIntervalForExport(ms: number | null): string {
   if (ms == null) return ''
@@ -25,7 +24,8 @@ function parseIntervalFromImport(scheduleTime: unknown): number | null {
   if (!trimmed) return null
   const match = trimmed.match(/^(\d+(?:\.\d+)?) ?s$/)
   if (!match) return null
-  return Number(match[1]) * 1000
+  const ms = Math.round(Number(match[1]) * 1000)
+  return Number.isFinite(ms) && ms >= 1000 ? ms : null
 }
 
 interface ImportedCommandEntry {
@@ -33,6 +33,13 @@ interface ImportedCommandEntry {
   category: string
   command: string
   scheduleTime: unknown
+  timeoutMs: number | null
+  idleGapMs: number | null
+  terminatorPattern: string | null
+}
+
+function optionalPositiveInt(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null
 }
 
 function parseImportEntries(raw: unknown): { entries: ImportedCommandEntry[]; errors: string[] } {
@@ -58,7 +65,18 @@ function parseImportEntries(raw: unknown): { entries: ImportedCommandEntry[]; er
       return
     }
     const category = typeof record.category === 'string' ? record.category.trim() : ''
-    entries.push({ name, category, command, scheduleTime: record.scheduleTime })
+    entries.push({
+      name,
+      category,
+      command,
+      scheduleTime: record.scheduleTime,
+      timeoutMs: optionalPositiveInt(record.timeoutMs),
+      idleGapMs: optionalPositiveInt(record.idleGapMs),
+      terminatorPattern:
+        typeof record.terminatorPattern === 'string' && record.terminatorPattern
+          ? record.terminatorPattern
+          : null
+    })
   })
   return { entries, errors }
 }
@@ -68,7 +86,10 @@ function formatCommandsForExport(commands: Command[], categoryNames: Map<number,
     name: c.name,
     category: c.categoryId != null ? (categoryNames.get(c.categoryId) ?? '') : '',
     command: c.commandString,
-    scheduleTime: formatIntervalForExport(c.scheduleIntervalMs)
+    scheduleTime: formatIntervalForExport(c.scheduleIntervalMs),
+    timeoutMs: c.timeoutMs,
+    idleGapMs: c.idleGapMs,
+    terminatorPattern: c.terminatorPattern
   }))
   return JSON.stringify(data, null, 2) + '\n'
 }
@@ -83,9 +104,8 @@ function defaultCommandsExportFileName(): string {
 export function registerCommandHandlers(
   commandsRepo: CommandsRepo,
   categoriesRepo: CategoriesRepo,
-  serialManager: SerialManager,
   scheduler: Scheduler,
-  logIngestor: LogIngestor,
+  commandQueue: CommandQueue,
   getWindow: () => BrowserWindow | null
 ): void {
   const broadcastChanged = (): void => {
@@ -117,14 +137,13 @@ export function registerCommandHandlers(
     broadcastChanged()
   })
 
-  ipcMain.handle(IPC.COMMANDS_RUN_NOW, async (_event, id: number): Promise<RunNowResult> => {
+  ipcMain.handle(IPC.COMMANDS_RUN_NOW, (_event, id: number): RunNowResult => {
     const command = commandsRepo.get(id)
     if (!command) {
       throw new Error(`Command ${id} not found`)
     }
-    const runId = logIngestor.beginRun(command.id, 'manual')
-    await serialManager.write(command.commandString)
-    return { runId }
+    const runId = commandQueue.enqueue(command, 'manual')
+    return { runId: runId as string }
   })
 
   ipcMain.handle(IPC.COMMANDS_EXPORT, async (): Promise<CommandExportResult> => {
@@ -214,7 +233,10 @@ export function registerCommandHandlers(
         commandString: entry.command,
         enabled: false,
         scheduleIntervalMs: parseIntervalFromImport(entry.scheduleTime),
-        categoryId: entry.category ? (categoryIdByName.get(entry.category) ?? null) : null
+        categoryId: entry.category ? (categoryIdByName.get(entry.category) ?? null) : null,
+        timeoutMs: entry.timeoutMs,
+        idleGapMs: entry.idleGapMs,
+        terminatorPattern: entry.terminatorPattern
       }
       const command = commandsRepo.create(input)
       scheduler.syncWithCommand(command)

@@ -5,6 +5,13 @@ export interface Command {
   enabled: boolean
   scheduleIntervalMs: number | null
   categoryId: number | null
+  // Per-command overrides for how a run ends. null = use the default (the
+  // connection's default command timeout / IDLE_GAP_MS_DEFAULT / no terminator).
+  timeoutMs: number | null
+  idleGapMs: number | null
+  // Optional regex tested against each received frame (decoded as latin1
+  // text); a match ends the run immediately.
+  terminatorPattern: string | null
   createdAt: string
   updatedAt: string
 }
@@ -15,6 +22,9 @@ export interface CommandInput {
   enabled: boolean
   scheduleIntervalMs: number | null
   categoryId: number | null
+  timeoutMs: number | null
+  idleGapMs: number | null
+  terminatorPattern: string | null
 }
 
 export interface Category {
