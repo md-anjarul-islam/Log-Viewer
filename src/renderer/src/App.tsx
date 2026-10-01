@@ -24,7 +24,8 @@ function App(): React.JSX.Element {
       from: new Date(centerMs - windowMs).toISOString(),
       to: new Date(centerMs + windowMs).toISOString()
     })
-    setView('debugLogs')
+    // The commands view already shows the debug pane alongside the logs.
+    if (view !== 'commands') setView('debugLogs')
   }
 
   // Mounted here (not inside CommandsView/LogStreamView) so these IPC
@@ -43,7 +44,7 @@ function App(): React.JSX.Element {
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar />
         <main className="flex-1 overflow-hidden">
-          {view === 'commands' && <CommandsView />}
+          {view === 'commands' && <CommandsView onJumpToDebugLogs={jumpToDebugLogs} />}
           {view === 'categories' && <CategoriesView />}
           {view === 'logs' && <LogStreamView onJumpToDebugLogs={jumpToDebugLogs} />}
           {view === 'debugLogs' && <DebugLogStreamView />}
