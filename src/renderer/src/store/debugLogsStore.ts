@@ -32,9 +32,17 @@ interface DebugLogsState {
   clearFilter: () => void
   runQuery: (loadMore?: boolean) => Promise<void>
 
+  // Re-fetches from the DB: the active filter's results, or the latest rows for the live tail.
+  reloading: boolean
+  reload: () => Promise<void>
+
   search: SearchState
   setSearch: (patch: Partial<SearchState>) => void
   clearSearch: () => void
+
+  // Time (epoch ms) of the command log row the user selected; debug rows near it are highlighted.
+  anchorMs: number | null
+  setAnchor: (ms: number | null) => void
 }
 
 function toQueryFilter(filter: DebugLogFilterState, cursor: string | null): DebugLogQueryFilter {
@@ -82,7 +90,27 @@ export const useDebugLogsStore = create<DebugLogsState>((set, get) => ({
     })
   },
 
+  reloading: false,
+  reload: async () => {
+    set({ reloading: true })
+    try {
+      const { filter } = get()
+      if (isDebugFilterActive(filter)) {
+        set({ historicalResults: [], historicalCursor: null })
+        await get().runQuery()
+      } else {
+        const result = await window.api.debugLogs.query({ limit: PAGE_SIZE })
+        set({ entries: result.entries })
+      }
+    } finally {
+      set({ reloading: false })
+    }
+  },
+
   search: DEFAULT_SEARCH,
   setSearch: (patch) => set((state) => ({ search: { ...state.search, ...patch } })),
-  clearSearch: () => set({ search: DEFAULT_SEARCH })
+  clearSearch: () => set({ search: DEFAULT_SEARCH }),
+
+  anchorMs: null,
+  setAnchor: (ms) => set({ anchorMs: ms })
 }))
