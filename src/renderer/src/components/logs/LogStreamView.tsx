@@ -17,10 +17,11 @@ import LogDetailPanel from './LogDetailPanel'
 import ClearLogsDialog from './ClearLogsDialog'
 
 interface LogStreamViewProps {
+  embedded?: boolean
   onJumpToDebugLogs: (centerTimestamp: string, windowMs: number) => void
 }
 
-function LogStreamView({ onJumpToDebugLogs }: LogStreamViewProps): React.JSX.Element {
+function LogStreamView({ embedded = false, onJumpToDebugLogs }: LogStreamViewProps): React.JSX.Element {
   const liveEntries = useLogsStore((s) => s.entries)
   const filter = useLogsStore((s) => s.filter)
   const historicalResults = useLogsStore((s) => s.historicalResults)
@@ -65,7 +66,7 @@ function LogStreamView({ onJumpToDebugLogs }: LogStreamViewProps): React.JSX.Ele
   const { isAtBottom, newCount, jumpToBottom } = useAutoScroll(parentRef, virtualizer, entries.length, !filtered)
 
   return (
-    <div className="relative flex h-full flex-col p-6">
+    <div className={`relative flex h-full flex-col ${embedded ? 'p-3' : 'p-6'}`}>
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-semibold text-neutral-100">Logs</h1>

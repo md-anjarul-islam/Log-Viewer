@@ -9,7 +9,11 @@ import DebugLogFilterBar from './DebugLogFilterBar'
 import DebugLogDetailPanel from './DebugLogDetailPanel'
 import ClearLogsDialog from './ClearLogsDialog'
 
-function DebugLogStreamView(): React.JSX.Element {
+interface DebugLogStreamViewProps {
+  embedded?: boolean
+}
+
+function DebugLogStreamView({ embedded = false }: DebugLogStreamViewProps): React.JSX.Element {
   const liveEntries = useDebugLogsStore((s) => s.entries)
   const filter = useDebugLogsStore((s) => s.filter)
   const historicalResults = useDebugLogsStore((s) => s.historicalResults)
@@ -46,7 +50,7 @@ function DebugLogStreamView(): React.JSX.Element {
   const { isAtBottom, newCount, jumpToBottom } = useAutoScroll(parentRef, virtualizer, entries.length, !filtered)
 
   return (
-    <div className="relative flex h-full flex-col p-6">
+    <div className={`relative flex h-full flex-col ${embedded ? 'p-3' : 'p-6'}`}>
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-semibold text-neutral-100">Debug Logs</h1>
