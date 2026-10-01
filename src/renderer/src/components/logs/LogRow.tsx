@@ -21,7 +21,8 @@ const SOURCE_STYLES: Record<LogEntry['source'], string> = {
 
 function LogRowImpl({ entry, mode, commandName, measureRef, onSelect, highlight, isSelected }: LogRowProps): React.JSX.Element {
   const time = new Date(entry.timestamp).toLocaleTimeString()
-  const displayText = encodeForDisplay(entry.raw, mode)
+  const noResponse = entry.raw === ''
+  const displayText = noResponse ? '— no response —' : encodeForDisplay(entry.raw, mode)
   const segments = highlight?.regex ? highlightSegments(displayText, highlight) : null
 
   return (
@@ -42,7 +43,7 @@ function LogRowImpl({ entry, mode, commandName, measureRef, onSelect, highlight,
         {commandName && (
           <span className="shrink-0 truncate pt-0.5 text-[11px] text-neutral-500">{commandName}</span>
         )}
-        <span className="whitespace-pre-wrap text-neutral-300">
+        <span className={`whitespace-pre-wrap ${noResponse ? 'italic text-amber-400/80' : 'text-neutral-300'}`}>
           {segments
             ? segments.map((seg, i) =>
                 seg.matched ? (

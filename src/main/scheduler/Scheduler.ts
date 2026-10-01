@@ -13,7 +13,7 @@ export class Scheduler {
 
   syncWithCommand(command: Command): void {
     this.clearTimer(command.id)
-    if (command.enabled && command.scheduleIntervalMs != null) {
+    if (command.enabled && command.scheduleIntervalMs != null && command.scheduleIntervalMs >= 1000) {
       const timer = setInterval(() => this.onTrigger(command, 'scheduled'), command.scheduleIntervalMs)
       this.timers.set(command.id, timer)
     }

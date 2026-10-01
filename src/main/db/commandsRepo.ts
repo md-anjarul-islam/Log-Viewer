@@ -8,6 +8,9 @@ interface CommandRow {
   enabled: number
   schedule_interval_ms: number | null
   category_id: number | null
+  timeout_ms: number | null
+  idle_gap_ms: number | null
+  terminator_pattern: string | null
   created_at: string
   updated_at: string
 }
@@ -20,6 +23,9 @@ function toCommand(row: CommandRow): Command {
     enabled: row.enabled === 1,
     scheduleIntervalMs: row.schedule_interval_ms,
     categoryId: row.category_id,
+    timeoutMs: row.timeout_ms,
+    idleGapMs: row.idle_gap_ms,
+    terminatorPattern: row.terminator_pattern,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -52,15 +58,18 @@ export class CommandsRepo {
   create(input: CommandInput): Command {
     const result = this.db
       .prepare(
-        `INSERT INTO commands (name, command_string, enabled, schedule_interval_ms, category_id)
-         VALUES (@name, @commandString, @enabled, @scheduleIntervalMs, @categoryId)`
+        `INSERT INTO commands (name, command_string, enabled, schedule_interval_ms, category_id, timeout_ms, idle_gap_ms, terminator_pattern)
+         VALUES (@name, @commandString, @enabled, @scheduleIntervalMs, @categoryId, @timeoutMs, @idleGapMs, @terminatorPattern)`
       )
       .run({
         name: input.name,
         commandString: input.commandString,
         enabled: input.enabled ? 1 : 0,
         scheduleIntervalMs: input.scheduleIntervalMs,
-        categoryId: input.categoryId
+        categoryId: input.categoryId,
+        timeoutMs: input.timeoutMs ?? null,
+        idleGapMs: input.idleGapMs ?? null,
+        terminatorPattern: input.terminatorPattern ?? null
       })
     return this.get(result.lastInsertRowid as number) as Command
   }
@@ -76,7 +85,11 @@ export class CommandsRepo {
       enabled: patch.enabled ?? existing.enabled,
       scheduleIntervalMs:
         patch.scheduleIntervalMs !== undefined ? patch.scheduleIntervalMs : existing.scheduleIntervalMs,
-      categoryId: patch.categoryId !== undefined ? patch.categoryId : existing.categoryId
+      categoryId: patch.categoryId !== undefined ? patch.categoryId : existing.categoryId,
+      timeoutMs: patch.timeoutMs !== undefined ? patch.timeoutMs : existing.timeoutMs,
+      idleGapMs: patch.idleGapMs !== undefined ? patch.idleGapMs : existing.idleGapMs,
+      terminatorPattern:
+        patch.terminatorPattern !== undefined ? patch.terminatorPattern : existing.terminatorPattern
     }
     this.db
       .prepare(
@@ -86,6 +99,9 @@ export class CommandsRepo {
              enabled = @enabled,
              schedule_interval_ms = @scheduleIntervalMs,
              category_id = @categoryId,
+             timeout_ms = @timeoutMs,
+             idle_gap_ms = @idleGapMs,
+             terminator_pattern = @terminatorPattern,
              updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
          WHERE id = @id`
       )
@@ -95,7 +111,10 @@ export class CommandsRepo {
         commandString: merged.commandString,
         enabled: merged.enabled ? 1 : 0,
         scheduleIntervalMs: merged.scheduleIntervalMs,
-        categoryId: merged.categoryId
+        categoryId: merged.categoryId,
+        timeoutMs: merged.timeoutMs,
+        idleGapMs: merged.idleGapMs,
+        terminatorPattern: merged.terminatorPattern
       })
     return this.get(id) as Command
   }

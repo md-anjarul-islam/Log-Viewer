@@ -41,7 +41,7 @@ function AutoReconnectToggle({ checked, onChange }: AutoReconnectToggleProps): R
   )
 }
 
-const CORRELATION_WINDOW_HINT = `Whole number of milliseconds, ${CORRELATION_WINDOW_MS_MIN}–${CORRELATION_WINDOW_MS_MAX}`
+const CORRELATION_WINDOW_HINT = `Used when a command has no timeout of its own. Whole number of milliseconds, ${CORRELATION_WINDOW_MS_MIN}–${CORRELATION_WINDOW_MS_MAX}`
 
 function validateCorrelationWindowInput(raw: string): string | null {
   const trimmed = raw.trim()
@@ -94,7 +94,7 @@ function CorrelationWindowField({
   return (
     <div className="flex flex-col gap-0.5">
       <label className="flex items-center gap-1.5 text-xs text-neutral-400" title={CORRELATION_WINDOW_HINT}>
-        <span>Correlation window (ms)</span>
+        <span>Default command timeout (ms)</span>
         <input
           type="number"
           min={CORRELATION_WINDOW_MS_MIN}
