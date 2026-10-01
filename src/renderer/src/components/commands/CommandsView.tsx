@@ -3,10 +3,14 @@ import type { Command } from "@shared/types";
 import { useCommandsStore } from "../../store/commandsStore";
 import { useCategoriesStore } from "../../store/categoriesStore";
 import { useSerialStore } from "../../store/serialStore";
+import { useDebugSerialStore } from "../../store/debugSerialStore";
+import { useDebugLogsStore } from "../../store/debugLogsStore";
 import CommandList from "./CommandList";
 import CommandEditorDialog from "./CommandEditorDialog";
 import LogStreamView from "../logs/LogStreamView";
 import DebugLogStreamView from "../logs/DebugLogStreamView";
+import SplitHandle from "../layout/SplitHandle";
+import { useSplit } from "../../hooks/useSplit";
 
 interface CommandsViewProps {
   onJumpToDebugLogs: (centerTimestamp: string, windowMs: number) => void;
@@ -21,6 +25,29 @@ function CommandsView({
   const remove = useCommandsStore((state) => state.remove);
   const categories = useCategoriesStore((state) => state.categories);
   const serialConnected = useSerialStore((state) => state.status.connected);
+
+  const debugStatus = useDebugSerialStore((state) => state.status);
+  const hasDebugLogs = useDebugLogsStore((state) => state.entries.length > 0);
+  // The debug connection is optional. Without one (and nothing captured
+  // earlier) the debug pane collapses to a slim strip so the serial log gets
+  // the space; the user can still expand it manually (e.g. to query history).
+  const [debugOverride, setDebugOverride] = useState<boolean | null>(null);
+  const debugAuto =
+    debugStatus.connected || Boolean(debugStatus.reconnecting) || hasDebugLogs;
+  const debugVisible = debugOverride ?? debugAuto;
+
+  const horizontal = useSplit({
+    storageKey: "split:commands:x",
+    axis: "x",
+    minFirstPx: 360,
+    minSecondPx: 320,
+  });
+  const vertical = useSplit({
+    storageKey: "split:commands:y",
+    axis: "y",
+    minFirstPx: 140,
+    minSecondPx: 140,
+  });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Command | null>(null);
@@ -92,8 +119,14 @@ function CommandsView({
   }
 
   return (
-    <div className="flex h-full">
-      <div className="flex h-full min-w-0 flex-1 basis-1/2 flex-col border-r border-neutral-800 p-4">
+    <div
+      ref={horizontal.containerRef}
+      className={`flex h-full ${horizontal.dragging ? "select-none" : ""}`}
+    >
+      <div
+        style={{ flexBasis: `${horizontal.ratio * 100}%` }}
+        className="flex h-full min-w-0 shrink-0 grow-0 flex-col p-4"
+      >
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-lg font-semibold text-neutral-100">Commands</h1>
           <div className="flex items-center gap-3">
@@ -153,13 +186,55 @@ function CommandsView({
           }}
         />
       </div>
-      <div className="flex h-full min-w-0 flex-1 basis-1/2 flex-col">
-        <div className="min-h-0 flex-1 border-b border-neutral-800">
-          <LogStreamView embedded onJumpToDebugLogs={onJumpToDebugLogs} />
+      <SplitHandle
+        axis="x"
+        dragging={horizontal.dragging}
+        onPointerDown={horizontal.onPointerDown}
+        onKeyDown={horizontal.onKeyDown}
+        onDoubleClick={horizontal.reset}
+      />
+      <div
+        ref={vertical.containerRef}
+        className={`flex h-full min-w-0 flex-1 flex-col ${vertical.dragging ? "select-none" : ""}`}
+      >
+        <div
+          style={debugVisible ? { flexBasis: `${vertical.ratio * 100}%` } : undefined}
+          className={`min-h-0 overflow-hidden ${debugVisible ? "shrink-0 grow-0" : "flex-1"}`}
+        >
+          <LogStreamView
+            embedded
+            onJumpToDebugLogs={(timestamp, windowMs) => {
+              setDebugOverride(true); // make sure the target pane is showing
+              onJumpToDebugLogs(timestamp, windowMs);
+            }}
+          />
         </div>
-        <div className="min-h-0 flex-1">
-          <DebugLogStreamView embedded />
-        </div>
+        {debugVisible ? (
+          <>
+            <SplitHandle
+              axis="y"
+              dragging={vertical.dragging}
+              onPointerDown={vertical.onPointerDown}
+              onKeyDown={vertical.onKeyDown}
+              onDoubleClick={vertical.reset}
+            />
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <DebugLogStreamView embedded />
+            </div>
+          </>
+        ) : (
+          <div className="flex shrink-0 items-center justify-between border-t border-neutral-800 px-3 py-2">
+            <span className="text-xs text-neutral-500">
+              Debug connection not open
+            </span>
+            <button
+              onClick={() => setDebugOverride(true)}
+              className="text-xs text-neutral-400 hover:text-neutral-200"
+            >
+              Show debug logs
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
