@@ -1,3 +1,6 @@
+import { useResizableWidth } from '../../hooks/useResizableWidth'
+import ResizeHandle from './ResizeHandle'
+
 export type View = 'logs' | 'debugLogs' | 'commands' | 'categories'
 
 interface SidebarProps {
@@ -13,8 +16,20 @@ const ITEMS: { id: View; label: string }[] = [
 ]
 
 function Sidebar({ active, onSelect }: SidebarProps): React.JSX.Element {
+  const resize = useResizableWidth({
+    storageKey: 'panelWidth.sidebar',
+    defaultWidth: 192,
+    minWidth: 140,
+    maxWidth: 360,
+    handleSide: 'right'
+  })
+
   return (
-    <nav className="flex w-48 shrink-0 flex-col gap-1 border-r border-neutral-800 bg-neutral-950 p-3">
+    <nav
+      style={{ width: resize.width }}
+      className="relative flex shrink-0 flex-col gap-1 border-r border-neutral-800 bg-neutral-950 p-3"
+    >
+      <ResizeHandle side="right" active={resize.isDragging} handleProps={resize.handleProps} />
       <div className="mb-2 px-2 text-sm font-semibold text-neutral-200">Log Viewer</div>
       {ITEMS.map((item) => (
         <button

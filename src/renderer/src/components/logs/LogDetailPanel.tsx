@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { DebugLogEntry, LogEntry } from '@shared/types'
+import { useResizableWidth } from '../../hooks/useResizableWidth'
+import ResizeHandle from '../layout/ResizeHandle'
 import { encodeForDisplay, type ByteEncodingMode } from '../../lib/byteEncoding'
 
 interface LogDetailPanelProps {
@@ -33,6 +35,13 @@ function LogDetailPanel({
   const [windowMs, setWindowMs] = useState(DEFAULT_CORRELATION_WINDOW_MS)
   const [correlated, setCorrelated] = useState<DebugLogEntry[]>([])
   const [loading, setLoading] = useState(false)
+  const resize = useResizableWidth({
+    storageKey: 'panelWidth.logDetail',
+    defaultWidth: 384,
+    minWidth: 320,
+    maxWidth: 900,
+    handleSide: 'left'
+  })
 
   useEffect(() => {
     if (!entry) {
@@ -57,7 +66,11 @@ function LogDetailPanel({
   if (!entry) return null
 
   return (
-    <div className="absolute inset-y-0 right-0 z-40 flex w-96 max-w-full flex-col border-l border-neutral-800 bg-neutral-950 shadow-2xl">
+    <div
+      style={{ width: resize.width }}
+      className="absolute inset-y-0 right-0 z-40 flex max-w-full flex-col border-l border-neutral-800 bg-neutral-950 shadow-2xl"
+    >
+      <ResizeHandle side="left" active={resize.isDragging} handleProps={resize.handleProps} />
       <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
         <h2 className="text-sm font-semibold text-neutral-100">Log detail</h2>
         <button onClick={onClose} className="text-neutral-500 hover:text-neutral-200" aria-label="Close">
