@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DebugLogEntry, LogEntry } from '@shared/types'
 import { encodeForDisplay, type ByteEncodingMode } from '../../lib/byteEncoding'
 
@@ -54,6 +54,27 @@ function LogDetailPanel({
     }
   }, [entry?.id, entry?.timestamp, windowMs])
 
+  // The debug line logged closest in time to the selected command log.
+  const closestId = useMemo(() => {
+    if (!entry || correlated.length === 0) return null
+    const anchor = Date.parse(entry.timestamp)
+    let best = correlated[0]
+    let bestDiff = Infinity
+    for (const d of correlated) {
+      const diff = Math.abs(Date.parse(d.timestamp) - anchor)
+      if (diff < bestDiff) {
+        bestDiff = diff
+        best = d
+      }
+    }
+    return best.id
+  }, [entry?.timestamp, correlated])
+
+  const closestRef = useRef<HTMLLIElement | null>(null)
+  useEffect(() => {
+    if (!loading) closestRef.current?.scrollIntoView({ block: 'center' })
+  }, [closestId, loading])
+
   if (!entry) return null
 
   return (
@@ -102,7 +123,13 @@ function LogDetailPanel({
         ) : (
           <ul className="space-y-1">
             {correlated.map((d) => (
-              <li key={d.id} className="rounded bg-neutral-900 px-2 py-1">
+              <li
+                key={d.id}
+                ref={d.id === closestId ? closestRef : undefined}
+                className={`rounded border-l-2 px-2 py-1 ${
+                  d.id === closestId ? 'border-l-amber-500 bg-amber-500/15' : 'border-l-transparent bg-neutral-900'
+                }`}
+              >
                 <div className="text-[10px] text-neutral-500">{new Date(d.timestamp).toLocaleTimeString()}</div>
                 <div className="whitespace-pre-wrap break-all text-neutral-300">{d.raw}</div>
               </li>
