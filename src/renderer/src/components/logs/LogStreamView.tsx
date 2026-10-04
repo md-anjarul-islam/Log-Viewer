@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { LogEntry } from '@shared/types'
 import { useCommandsStore } from '../../store/commandsStore'
 import { isFilterActive, useLogsStore } from '../../store/logsStore'
-import { useDebugLogsStore } from '../../store/debugLogsStore'
 import { compileSearch, isSearchActive, matchesSearch } from '../../lib/logSearch'
 import {
   BYTE_ENCODING_MODES,
@@ -56,13 +55,6 @@ function LogStreamView({ embedded = false, onJumpToDebugLogs }: LogStreamViewPro
   const parentRef = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState<LogEntry | null>(null)
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
-
-  // Let the debug pane highlight lines logged close to the selected row.
-  const setAnchor = useDebugLogsStore((s) => s.setAnchor)
-  useEffect(() => {
-    setAnchor(selected ? Date.parse(selected.timestamp) : null)
-    return () => setAnchor(null)
-  }, [selected, setAnchor])
 
   const virtualizer = useVirtualizer({
     count: entries.length,
