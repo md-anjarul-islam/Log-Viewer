@@ -8,10 +8,9 @@ interface DebugLogRowProps {
   onSelect?: (entry: DebugLogEntry) => void
   highlight?: CompiledSearch
   isSelected?: boolean
-  isNear?: boolean
 }
 
-function DebugLogRowImpl({ entry, measureRef, onSelect, highlight, isSelected, isNear }: DebugLogRowProps): React.JSX.Element {
+function DebugLogRowImpl({ entry, measureRef, onSelect, highlight, isSelected }: DebugLogRowProps): React.JSX.Element {
   const time = new Date(entry.timestamp).toLocaleTimeString()
   const displayText = entry.raw
   const segments = highlight?.regex ? highlightSegments(displayText, highlight) : null
@@ -23,9 +22,7 @@ function DebugLogRowImpl({ entry, measureRef, onSelect, highlight, isSelected, i
       className={`cursor-pointer border-b border-neutral-900 border-l-2 px-3 py-1.5 ${
         isSelected
           ? 'border-l-indigo-500 bg-indigo-500/15 hover:bg-indigo-500/20'
-          : isNear
-            ? 'border-l-amber-500 bg-amber-500/10 hover:bg-amber-500/15'
-            : 'border-l-transparent hover:bg-neutral-800/50'
+          : 'border-l-transparent hover:bg-neutral-800/50'
       }`}
     >
       <div className="flex items-start gap-2 font-mono text-xs">

@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { DebugLogEntry } from '@shared/types'
-import { CORRELATION_WINDOW_MS_DEFAULT } from '@shared/constants'
 import { isDebugFilterActive, useDebugLogsStore } from '../../store/debugLogsStore'
 import { compileSearch, isSearchActive, matchesSearch } from '../../lib/logSearch'
 import { useAutoScroll } from '../../hooks/useAutoScroll'
@@ -22,7 +21,6 @@ function DebugLogStreamView({ embedded = false }: DebugLogStreamViewProps): Reac
   const historicalLoading = useDebugLogsStore((s) => s.historicalLoading)
   const runQuery = useDebugLogsStore((s) => s.runQuery)
   const search = useDebugLogsStore((s) => s.search)
-  const anchorMs = useDebugLogsStore((s) => s.anchorMs)
 
   const filtered = isDebugFilterActive(filter)
   const baseEntries = filtered ? historicalResults : liveEntries
@@ -50,23 +48,6 @@ function DebugLogStreamView({ embedded = false }: DebugLogStreamViewProps): Reac
   })
 
   const { isAtBottom, newCount, jumpToBottom } = useAutoScroll(parentRef, virtualizer, entries.length, !filtered)
-
-  // Scroll to the debug line closest in time to the selected command row. Only
-  // runs when the anchor changes, not as new lines stream in.
-  useEffect(() => {
-    if (anchorMs == null || entries.length === 0) return
-    let best = 0
-    let bestDiff = Infinity
-    entries.forEach((e, i) => {
-      const diff = Math.abs(Date.parse(e.timestamp) - anchorMs)
-      if (diff < bestDiff) {
-        bestDiff = diff
-        best = i
-      }
-    })
-    virtualizer.scrollToIndex(best, { align: 'center' })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anchorMs])
 
   return (
     <div className={`relative flex h-full flex-col ${embedded ? 'p-3' : 'p-6'}`}>
@@ -120,11 +101,6 @@ function DebugLogStreamView({ embedded = false }: DebugLogStreamViewProps): Reac
                     onSelect={setSelected}
                     highlight={compiledSearch}
                     isSelected={selected?.id === entries[virtualRow.index].id}
-                    isNear={
-                      anchorMs != null &&
-                      Math.abs(Date.parse(entries[virtualRow.index].timestamp) - anchorMs) <=
-                        CORRELATION_WINDOW_MS_DEFAULT
-                    }
                   />
                 </div>
               ))}
