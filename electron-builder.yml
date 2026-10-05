@@ -6,6 +6,11 @@ directories:
 files:
   - out/**/*
   - package.json
+# Native modules (better-sqlite3, serialport) are rebuilt against the pinned
+# Electron version on the build machine, so build each OS on that OS (Linux on
+# ubuntu-22.04 so the binaries run on 22.04 and newer).
+npmRebuild: true
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 asarUnpack:
   - '**/*.node'
 mac:
