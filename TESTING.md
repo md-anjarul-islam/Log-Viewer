@@ -4,7 +4,7 @@ You don't need a real serial device to try out or develop the app — it ships
 with a built-in simulator that behaves like a connected device, on both the
 main (command/response) and debug (free-running log) connections.
 
-1. `npm run dev`
+1. `yarn dev`
 2. Open Connection Settings (for the main connection, the debug connection,
    or both — they're independent and both support this).
 3. In the **Port** dropdown, pick **`__simulated__` (Log Viewer Simulator)**.

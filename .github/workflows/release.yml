@@ -24,12 +24,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run ${{ matrix.script }} -- --publish never
+          cache: yarn
+      - run: yarn install --immutable
+      - run: yarn ${{ matrix.script }} --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: installers-${{ matrix.os }}
