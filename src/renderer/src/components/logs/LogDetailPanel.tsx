@@ -78,7 +78,7 @@ function LogDetailPanel({
   if (!entry) return null
 
   return (
-    <div className="absolute inset-y-0 right-0 z-40 flex w-96 max-w-full flex-col border-l border-neutral-800 bg-neutral-950 shadow-2xl">
+    <div className="flex h-full w-full min-w-0 flex-col overflow-hidden rounded-lg border border-neutral-800 bg-neutral-950">
       <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
         <h2 className="text-sm font-semibold text-neutral-100">Log detail</h2>
         <button onClick={onClose} className="text-neutral-500 hover:text-neutral-200" aria-label="Close">

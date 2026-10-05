@@ -11,34 +11,38 @@
     "preview": "electron-vite preview",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
-    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "typecheck": "yarn typecheck:node && yarn typecheck:web",
     "postinstall": "install-electron && electron-builder install-app-deps",
-    "package": "npm run build && electron-builder",
-    "package:mac": "npm run build && electron-builder --mac",
-    "package:win": "npm run build && electron-builder --win",
-    "package:linux": "npm run build && electron-builder --linux"
+    "package": "yarn build && electron-builder",
+    "package:mac": "yarn build && electron-builder --mac",
+    "package:win": "yarn build && electron-builder --win",
+    "package:linux": "yarn build && electron-builder --linux"
   },
   "dependencies": {
-    "@serialport/parser-readline": "13.0.0",
-    "@tanstack/react-virtual": "3.14.13",
-    "better-sqlite3": "12.11.1",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "serialport": "13.0.0",
-    "zustand": "5.0.15"
+    "better-sqlite3": "13.0.3",
+    "serialport": "13.0.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",
+    "@tanstack/react-virtual": "3.14.13",
     "@types/better-sqlite3": "9.6.0",
-    "@types/node": "20.19.43",
+    "@types/node": "24.19.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vitejs/plugin-react": "5.1.0",
-    "electron": "44.4.3",
+    "@vitejs/plugin-react": "6.1.1",
+    "electron": "44.5.1",
     "electron-builder": "26.15.3",
-    "electron-vite": "5.0.0",
+    "electron-vite": "6.0.0-beta.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "tailwindcss": "4.3.3",
-    "typescript": "5.9.3",
-    "vite": "7.3.6"
-  }
+    "typescript": "7.0.2",
+    "vite": "8.3.2",
+    "zustand": "5.0.15"
+  },
+  "engines": {
+    "node": ">=22.12.0",
+    "yarn": ">=1.22.22 <2"
+  },
+  "packageManager": "yarn@1.22.22"
 }

@@ -24,6 +24,8 @@ interface LogsState {
   appendBatch: (batch: LogEntry[]) => void
   removeOlderThan: (cutoffIso: string) => void
   clearEntries: () => void
+  // UI-only: empties what is on screen. Never touches the database.
+  clearView: () => void
 
   // Filtered/historical browsing (a filter is active).
   filter: LogFilterState
@@ -68,6 +70,7 @@ export const useLogsStore = create<LogsState>((set, get) => ({
   removeOlderThan: (cutoffIso) =>
     set((state) => ({ entries: state.entries.filter((e) => e.timestamp >= cutoffIso) })),
   clearEntries: () => set({ entries: [] }),
+  clearView: () => set({ entries: [], historicalResults: [], historicalCursor: null }),
 
   filter: DEFAULT_FILTER,
   historicalResults: [],
