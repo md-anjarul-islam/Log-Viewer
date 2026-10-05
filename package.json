@@ -12,7 +12,7 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "yarn typecheck:node && yarn typecheck:web",
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "install-electron && electron-builder install-app-deps",
     "package": "yarn build && electron-builder",
     "package:mac": "yarn build && electron-builder --mac",
     "package:win": "yarn build && electron-builder --win",
