@@ -30,14 +30,14 @@ expect a SmartScreen / Gatekeeper warning.
 | Tool | Version | Where it is pinned |
 | --- | --- | --- |
 | Node.js | 22 (>= 22.12) | `.nvmrc`, `engines` in `package.json`, CI |
-| Yarn | 4.18.1 (via Corepack) | `packageManager` in `package.json`, `.yarnrc.yml` |
+| Yarn (classic) | 1.22.22 | `packageManager` and `engines` in `package.json` |
 | Electron | 44.5.1 (bundles Node 24) | `package.json` (exact) |
 | electron-builder | see `package.json` | `package.json` (exact) |
 | electron-vite / Vite / TypeScript | 6 (beta) / 8 / 7 | `package.json` (exact) |
 | better-sqlite3 | 13 (needs Node >= 22) | `package.json` (exact) |
 | React / Tailwind | 19 / 4 | `package.json` (exact) |
 
-All dependency versions are pinned exactly and `engines` is declared, and Yarn is fixed through Corepack. Only the two
+All dependency versions are pinned exactly and `engines` is declared, and Yarn is pinned through `packageManager`. Only the two
 native modules (`better-sqlite3`, `serialport`) are runtime dependencies; the
 UI libraries are bundled by Vite and so live in `devDependencies`.
 
@@ -45,7 +45,7 @@ UI libraries are bundled by Vite and so live in `devDependencies`.
 
 ```bash
 nvm use            # picks Node 22 from .nvmrc
-corepack enable    # provides the pinned Yarn 4
+corepack enable    # provides the pinned Yarn 1.22.22 (or: npm i -g yarn@1.22.22)
 yarn install
 yarn dev           # Electron + Vite with hot reload
 yarn typecheck
