@@ -2,10 +2,17 @@ import { useEffect, useState } from 'react'
 import type { Command, CommandInput } from '@shared/types'
 import { IDLE_GAP_MS_MAX, IDLE_GAP_MS_MIN, CORRELATION_WINDOW_MS_MAX, CORRELATION_WINDOW_MS_MIN } from '@shared/constants'
 import { useCategoriesStore } from '../../store/categoriesStore'
+import {
+  formatCommand,
+  parseCommandInput,
+  type CommandEncodingMode
+} from '../../lib/commandEncoding'
+import CommandEncodingToggle from './CommandEncodingToggle'
 
 interface CommandEditorDialogProps {
   open: boolean
   initial?: Command | null
+  initialEncodingMode: CommandEncodingMode
   onClose: () => void
   onSubmit: (input: CommandInput) => Promise<void>
 }
@@ -18,10 +25,12 @@ function parseOptionalMs(raw: string, min: number, max: number): number | null |
   return Number.isInteger(n) && n >= min && n <= max ? n : undefined
 }
 
-function CommandEditorDialog({ open, initial, onClose, onSubmit }: CommandEditorDialogProps): React.JSX.Element | null {
+function CommandEditorDialog({ open, initial, initialEncodingMode, onClose, onSubmit }: CommandEditorDialogProps): React.JSX.Element | null {
   const categories = useCategoriesStore((state) => state.categories)
   const [name, setName] = useState('')
+  // The field's text is in `encodingMode`; it is converted to hex on save.
   const [commandString, setCommandString] = useState('')
+  const [encodingMode, setEncodingMode] = useState<CommandEncodingMode>(initialEncodingMode)
   const [enabled, setEnabled] = useState(false)
   const [intervalSeconds, setIntervalSeconds] = useState('')
   const [categoryId, setCategoryId] = useState<number | null>(null)
@@ -34,7 +43,8 @@ function CommandEditorDialog({ open, initial, onClose, onSubmit }: CommandEditor
   useEffect(() => {
     if (!open) return
     setName(initial?.name ?? '')
-    setCommandString(initial?.commandString ?? '')
+    setEncodingMode(initialEncodingMode)
+    setCommandString(formatCommand(initial?.commandString ?? '', initialEncodingMode))
     setEnabled(initial?.enabled ?? false)
     setIntervalSeconds(
       initial?.scheduleIntervalMs != null ? String(Math.round(initial.scheduleIntervalMs / 1000)) : ''
@@ -44,11 +54,23 @@ function CommandEditorDialog({ open, initial, onClose, onSubmit }: CommandEditor
     setIdleGapMs(initial?.idleGapMs != null ? String(initial.idleGapMs) : '')
     setTerminatorPattern(initial?.terminatorPattern ?? '')
     setError(null)
-  }, [open, initial])
+  }, [open, initial, initialEncodingMode])
 
   if (!open) return null
 
   const isEdit = Boolean(initial)
+
+  function handleEncodingChange(next: CommandEncodingMode): void {
+    if (next === encodingMode) return
+    const parsed = parseCommandInput(commandString, encodingMode)
+    if (!parsed.ok) {
+      setError(parsed.error)
+      return
+    }
+    setError(null)
+    setCommandString(formatCommand(parsed.hex, next))
+    setEncodingMode(next)
+  }
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault()
@@ -60,6 +82,15 @@ function CommandEditorDialog({ open, initial, onClose, onSubmit }: CommandEditor
     }
     if (idleGap === undefined) {
       setError(`Idle gap must be a whole number of ms between ${IDLE_GAP_MS_MIN} and ${IDLE_GAP_MS_MAX}.`)
+      return
+    }
+    const command = parseCommandInput(commandString, encodingMode)
+    if (!command.ok) {
+      setError(command.error)
+      return
+    }
+    if (!command.hex) {
+      setError('Command must not be empty.')
       return
     }
     const terminator = terminatorPattern.trim()
@@ -77,7 +108,7 @@ function CommandEditorDialog({ open, initial, onClose, onSubmit }: CommandEditor
       const trimmedInterval = intervalSeconds.trim()
       await onSubmit({
         name: name.trim(),
-        commandString: commandString.trim(),
+        commandString: command.hex,
         enabled,
         scheduleIntervalMs: trimmedInterval ? Math.round(Number(trimmedInterval) * 1000) : null,
         categoryId,
@@ -114,14 +145,20 @@ function CommandEditorDialog({ open, initial, onClose, onSubmit }: CommandEditor
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-400">Command</label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-medium text-neutral-400">Command</label>
+              <CommandEncodingToggle mode={encodingMode} onChange={handleEncodingChange} />
+            </div>
             <input
               required
               value={commandString}
               onChange={(e) => setCommandString(e.target.value)}
               className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-100 outline-none focus:border-neutral-500"
-              placeholder="e.g. AT+STATUS?"
+              placeholder={encodingMode === 'hex' ? 'e.g. 41 54 0D 0A' : 'e.g. AT\\r\\n'}
             />
+            <p className="mt-1 text-[11px] text-neutral-500">
+              Always sent as hex bytes. ASCII is a convenience: use \r \n \t \\ and \xHH for non-printable bytes.
+            </p>
           </div>
 
           <div>

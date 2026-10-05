@@ -7,6 +7,11 @@ import { useDebugSerialStore } from "../../store/debugSerialStore";
 import { useDebugLogsStore } from "../../store/debugLogsStore";
 import CommandList from "./CommandList";
 import CommandEditorDialog from "./CommandEditorDialog";
+import CommandEncodingToggle from "./CommandEncodingToggle";
+import {
+  DEFAULT_COMMAND_ENCODING_MODE,
+  type CommandEncodingMode,
+} from "../../lib/commandEncoding";
 import LogStreamView from "../logs/LogStreamView";
 import DebugLogStreamView from "../logs/DebugLogStreamView";
 import SplitHandle from "../layout/SplitHandle";
@@ -49,6 +54,9 @@ function CommandsView({
     minSecondPx: 140,
   });
 
+  const [encodingMode, setEncodingMode] = useState<CommandEncodingMode>(
+    DEFAULT_COMMAND_ENCODING_MODE,
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Command | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -128,7 +136,10 @@ function CommandsView({
         className="flex h-full min-w-0 shrink-0 grow-0 flex-col p-4"
       >
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-lg font-semibold text-neutral-100">Commands</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold text-neutral-100">Commands</h1>
+            <CommandEncodingToggle mode={encodingMode} onChange={setEncodingMode} />
+          </div>
           <div className="flex items-center gap-3">
             {importStatus && (
               <span className="text-xs text-neutral-500">{importStatus}</span>
@@ -161,6 +172,7 @@ function CommandsView({
 
         <div className="flex-1 overflow-auto rounded-lg border border-neutral-800 bg-neutral-900 p-4">
           <CommandList
+            encodingMode={encodingMode}
             commands={commands}
             categories={categories}
             serialConnected={serialConnected}
@@ -176,6 +188,7 @@ function CommandsView({
         <CommandEditorDialog
           open={dialogOpen}
           initial={editing}
+          initialEncodingMode={encodingMode}
           onClose={() => setDialogOpen(false)}
           onSubmit={async (input) => {
             if (editing) {

@@ -8,7 +8,7 @@ shows the debug lines logged around that moment.
 
 ## Features
 
-- **Commands** – named commands with optional categories, enable/disable, a repeat interval, and per-command timeout / idle-gap / terminator settings.
+- **Commands** – shown and edited as **hex** (default) or **ASCII** via a toggle (ASCII supports `\r \n \t \\ \xHH` escapes); they are always stored and sent as hex bytes. Named commands with optional categories, enable/disable, a repeat interval, and per-command timeout / idle-gap / terminator settings.
 - **Live log stream** – virtualized table that handles very large logs; hex / text / other display encodings; text and regex search; filters by command and time range; export.
 - **Debug console** – separate serial connection with its own stored log, search and filters.
 - **Click-to-correlate** – click a log row to open a resizable side panel with the debug logs in a ±1s / ±5s / ±30s window around it, plus a jump into the debug view at that time.
