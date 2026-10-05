@@ -15,7 +15,9 @@ jobs:
           # binaries also run on Ubuntu 22.04. Do not move this to a newer image.
           - os: ubuntu-22.04
             script: package:linux
-          - os: windows-latest
+          # Windows is pinned to 2022 (VS 2022): node-gyp 11.5 can't detect the
+          # VS 18 on windows-latest, which breaks the better-sqlite3 build.
+          - os: windows-2022
             script: package:win
           - os: macos-latest # arm64
             script: package:mac
