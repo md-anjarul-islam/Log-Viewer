@@ -16,6 +16,6 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: yarn
-      - run: yarn install --immutable
+      - run: yarn install --frozen-lockfile
       - run: yarn typecheck
       - run: yarn build
