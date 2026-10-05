@@ -28,6 +28,7 @@ function LogFilterBar({ onOpenClear }: LogFilterBarProps): React.JSX.Element {
   const search = useLogsStore((s) => s.search)
   const setSearch = useLogsStore((s) => s.setSearch)
   const reload = useLogsStore((s) => s.reload)
+  const clearView = useLogsStore((s) => s.clearView)
   const reloading = useLogsStore((s) => s.reloading)
   const active = isFilterActive(filter) || isSearchActive(search)
 
@@ -161,6 +162,13 @@ function LogFilterBar({ onOpenClear }: LogFilterBarProps): React.JSX.Element {
           className="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-600 hover:text-neutral-100 disabled:opacity-50"
         >
           {exporting ? 'Exporting…' : active ? 'Export filtered…' : 'Export…'}
+        </button>
+        <button
+          onClick={clearView}
+          title="Clears the display only; the database is not changed"
+          className="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-600 hover:text-neutral-100"
+        >
+          Clear view
         </button>
         <button onClick={onOpenClear} className="rounded-md px-2 py-1 text-xs text-red-400/80 hover:text-red-400">
           Clear logs…

@@ -23,6 +23,8 @@ interface DebugLogsState {
   appendBatch: (batch: DebugLogEntry[]) => void
   removeOlderThan: (cutoffIso: string) => void
   clearEntries: () => void
+  // UI-only: empties what is on screen. Never touches the database.
+  clearView: () => void
 
   filter: DebugLogFilterState
   historicalResults: DebugLogEntry[]
@@ -61,6 +63,7 @@ export const useDebugLogsStore = create<DebugLogsState>((set, get) => ({
   removeOlderThan: (cutoffIso) =>
     set((state) => ({ entries: state.entries.filter((e) => e.timestamp >= cutoffIso) })),
   clearEntries: () => set({ entries: [] }),
+  clearView: () => set({ entries: [], historicalResults: [], historicalCursor: null }),
 
   filter: DEFAULT_DEBUG_FILTER,
   historicalResults: [],

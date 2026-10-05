@@ -15,6 +15,8 @@ import LogRow from './LogRow'
 import LogFilterBar from './LogFilterBar'
 import LogDetailPanel from './LogDetailPanel'
 import ClearLogsDialog from './ClearLogsDialog'
+import SplitHandle from '../layout/SplitHandle'
+import { useSplit } from '../../hooks/useSplit'
 
 interface LogStreamViewProps {
   embedded?: boolean
@@ -56,6 +58,14 @@ function LogStreamView({ embedded = false, onJumpToDebugLogs }: LogStreamViewPro
   const [selected, setSelected] = useState<LogEntry | null>(null)
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
 
+  const split = useSplit({
+    storageKey: 'split:logDetail:x',
+    axis: 'x',
+    initialRatio: 0.6,
+    minFirstPx: 320,
+    minSecondPx: 280
+  })
+
   const virtualizer = useVirtualizer({
     count: entries.length,
     getScrollElement: () => parentRef.current,
@@ -93,7 +103,17 @@ function LogStreamView({ embedded = false, onJumpToDebugLogs }: LogStreamViewPro
 
       <LogFilterBar onOpenClear={() => setClearDialogOpen(true)} />
 
-      <div ref={parentRef} className="flex-1 overflow-auto rounded-lg border border-neutral-800 bg-neutral-900">
+      <div
+        ref={split.containerRef}
+        className={`flex min-h-0 flex-1 ${split.dragging ? 'select-none' : ''}`}
+      >
+      <div
+        ref={parentRef}
+        style={selected ? { flexBasis: `${split.ratio * 100}%` } : undefined}
+        className={`min-w-0 overflow-auto rounded-lg border border-neutral-800 bg-neutral-900 ${
+          selected ? 'shrink-0 grow-0' : 'flex-1'
+        }`}
+      >
         {entries.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-neutral-600">
             {baseEntries.length > 0
@@ -147,6 +167,27 @@ function LogStreamView({ embedded = false, onJumpToDebugLogs }: LogStreamViewPro
           </>
         )}
       </div>
+      {selected && (
+        <>
+          <SplitHandle
+            axis="x"
+            dragging={split.dragging}
+            onPointerDown={split.onPointerDown}
+            onKeyDown={split.onKeyDown}
+            onDoubleClick={split.reset}
+          />
+          <div className="min-w-0 flex-1">
+            <LogDetailPanel
+              entry={selected}
+              mode={mode}
+              commandName={selected.commandId != null ? commandNameById.get(selected.commandId) : undefined}
+              onClose={() => setSelected(null)}
+              onJumpToDebugLogs={onJumpToDebugLogs}
+            />
+          </div>
+        </>
+      )}
+      </div>
 
       {!filtered && !isAtBottom && newCount > 0 && (
         <button
@@ -156,14 +197,6 @@ function LogStreamView({ embedded = false, onJumpToDebugLogs }: LogStreamViewPro
           New logs ↓ ({newCount})
         </button>
       )}
-
-      <LogDetailPanel
-        entry={selected}
-        mode={mode}
-        commandName={selected?.commandId != null ? commandNameById.get(selected.commandId) : undefined}
-        onClose={() => setSelected(null)}
-        onJumpToDebugLogs={onJumpToDebugLogs}
-      />
 
       <ClearLogsDialog
         open={clearDialogOpen}

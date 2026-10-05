@@ -26,6 +26,7 @@ function DebugLogFilterBar({ onOpenClear }: DebugLogFilterBarProps): React.JSX.E
   const search = useDebugLogsStore((s) => s.search)
   const setSearch = useDebugLogsStore((s) => s.setSearch)
   const reload = useDebugLogsStore((s) => s.reload)
+  const clearView = useDebugLogsStore((s) => s.clearView)
   const reloading = useDebugLogsStore((s) => s.reloading)
   const active = isDebugFilterActive(filter) || isSearchActive(search)
 
@@ -117,6 +118,13 @@ function DebugLogFilterBar({ onOpenClear }: DebugLogFilterBarProps): React.JSX.E
           className="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-600 hover:text-neutral-100 disabled:opacity-50"
         >
           {reloading ? 'Reloading…' : '⟳ Reload'}
+        </button>
+        <button
+          onClick={clearView}
+          title="Clears the display only; the database is not changed"
+          className="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-600 hover:text-neutral-100"
+        >
+          Clear view
         </button>
         <button onClick={onOpenClear} className="rounded-md px-2 py-1 text-xs text-red-400/80 hover:text-red-400">
           Clear logs…

@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events'
-import { SerialPort } from 'serialport'
-import { ReadlineParser } from '@serialport/parser-readline'
+import { ReadlineParser, SerialPort } from 'serialport'
 import type { AutoReconnectSettings, SerialPortInfo, SerialStatus } from '@shared/types'
 import type { SerialChannel, SettingsStore } from '../settings/SettingsStore'
 import { SimulatedSerialPort } from './SimulatedSerialPort'
