@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import type { Category, Command } from '@shared/types'
+import { formatCommand, type CommandEncodingMode } from '../../lib/commandEncoding'
 
 interface CommandListProps {
+  encodingMode: CommandEncodingMode
   commands: Command[]
   categories: Category[]
   serialConnected: boolean
@@ -103,6 +105,7 @@ function accentFor(key: string | null): (typeof CATEGORY_ACCENTS)[number] {
 }
 
 function CommandList({
+  encodingMode,
   commands,
   categories,
   serialConnected,
@@ -207,9 +210,9 @@ function CommandList({
 
                     <div
                       className="mt-1.5 truncate rounded bg-black/30 px-1.5 py-1 font-mono text-xs text-neutral-400"
-                      title={command.commandString}
+                      title={formatCommand(command.commandString, encodingMode)}
                     >
-                      {command.commandString}
+                      {formatCommand(command.commandString, encodingMode)}
                     </div>
 
                     <div className="mt-3 flex items-center justify-between">
