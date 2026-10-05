@@ -30,15 +30,14 @@ expect a SmartScreen / Gatekeeper warning.
 | Tool | Version | Where it is pinned |
 | --- | --- | --- |
 | Node.js | 22 (>= 22.12) | `.nvmrc`, `engines` in `package.json`, CI |
-| npm | >= 10 | `engines` in `package.json` |
-| Electron | 44.5.1 | `package.json` (exact) |
+| Yarn | 4.18.1 (via Corepack) | `packageManager` in `package.json`, `.yarnrc.yml` |
+| Electron | 44.5.1 (bundles Node 24) | `package.json` (exact) |
 | electron-builder | see `package.json` | `package.json` (exact) |
-| electron-vite / Vite | 5 / 7 | `package.json` (exact) |
+| electron-vite / Vite / TypeScript | 6 (beta) / 8 / 7 | `package.json` (exact) |
 | better-sqlite3 | 13 (needs Node >= 22) | `package.json` (exact) |
 | React / Tailwind | 19 / 4 | `package.json` (exact) |
 
-All dependency versions are pinned exactly and `engine-strict` is on
-(`.npmrc`), so installing with the wrong Node version fails early. Only the two
+All dependency versions are pinned exactly and `engines` is declared, and Yarn is fixed through Corepack. Only the two
 native modules (`better-sqlite3`, `serialport`) are runtime dependencies; the
 UI libraries are bundled by Vite and so live in `devDependencies`.
 
@@ -46,9 +45,10 @@ UI libraries are bundled by Vite and so live in `devDependencies`.
 
 ```bash
 nvm use            # picks Node 22 from .nvmrc
-npm ci
-npm run dev        # Electron + Vite with hot reload
-npm run typecheck
+corepack enable    # provides the pinned Yarn 4
+yarn install
+yarn dev           # Electron + Vite with hot reload
+yarn typecheck
 ```
 
 On Linux you need a C/C++ toolchain and Python for native module rebuilds
@@ -57,9 +57,9 @@ On Linux you need a C/C++ toolchain and Python for native module rebuilds
 ## Building installers
 
 ```bash
-npm run package:linux   # AppImage + deb
-npm run package:win     # NSIS installer
-npm run package:mac     # dmg
+yarn package:linux   # AppImage + deb
+yarn package:win     # NSIS installer
+yarn package:mac     # dmg
 ```
 
 Output goes to `dist/`. Native modules are compiled for the current OS, so
@@ -96,6 +96,6 @@ The database and `settings.json` live in the Electron `userData` directory.
 
 ## Troubleshooting
 
-- **`better-sqlite3` / `GLIBC_x.y` / `NODE_MODULE_VERSION` error on startup** – the package was built on a newer OS or a different Node/Electron. Rebuild on Ubuntu 22.04 with `npm ci` and the pinned versions.
+- **`better-sqlite3` / `GLIBC_x.y` / `NODE_MODULE_VERSION` error on startup** – the package was built on a newer OS or a different Node/Electron. Rebuild on Ubuntu 22.04 with `yarn install` and the pinned versions.
 - **Serial permission denied on Linux** – add your user to the `dialout` group and log in again.
 - **Blank window on some Wayland setups** – the app already passes `--ozone-platform=x11`.
