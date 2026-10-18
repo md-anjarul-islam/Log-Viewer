@@ -6,6 +6,9 @@ into a searchable, filterable log. A second, independent serial connection
 captures the device's free-running **debug console**, and clicking any log row
 shows the debug lines logged around that moment.
 
+## 🎬 See what your firmware was doing — the moment it responded
+https://github.com/user-attachments/assets/92a8cd34-ea24-42a2-aa0a-ec73abedfd79
+
 ## Features
 
 - **Commands** – shown and edited as **hex** (default) or **ASCII** via a toggle (ASCII supports `\r \n \t \\ \xHH` escapes); they are always stored and sent as hex bytes. Named commands with optional categories, enable/disable, a repeat interval, and per-command timeout / idle-gap / terminator settings.
